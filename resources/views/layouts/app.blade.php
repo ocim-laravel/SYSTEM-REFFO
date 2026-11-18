@@ -48,7 +48,11 @@
     </style>
     @stack('head')
 </head>
-<body>
+<body
+    data-user-id="{{ auth()->id() ?? '' }}"
+    data-user-role="{{ auth()->user()?->roleEnum()?->value ?? '' }}"
+    data-user-division="{{ auth()->user()?->division?->code ?? '' }}"
+>
     @auth
         <div class="app-shell">
             @include('layouts.partials.sidebar')

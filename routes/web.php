@@ -1,6 +1,5 @@
 <?php
 
-use App\Events\RealtimeNotification;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordChangeController;
@@ -8,6 +7,7 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Operator\DashboardController as OperatorDashboardController;
 use App\Http\Controllers\System\DivisionController;
+use App\Http\Controllers\System\RealtimeTestController;
 use App\Http\Controllers\System\UserController;
 use App\Http\Controllers\System\WorkCalendarController;
 use Illuminate\Support\Facades\Route;
@@ -58,13 +58,6 @@ Route::middleware(['auth', 'role:operator'])->prefix('operator')->name('operator
     Route::get('/dashboard', [OperatorDashboardController::class, 'index'])->name('dashboard');
 });
 
-Route::get('/broadcast-test', function () {
-    $message = request('message', 'Notifikasi realtime berhasil dikirim.');
-
-    event(new RealtimeNotification($message));
-
-    return response()->json([
-        'ok' => true,
-        'message' => $message,
-    ]);
-});
+Route::get('/broadcast-test', RealtimeTestController::class)
+    ->middleware('auth')
+    ->name('broadcast-test');
