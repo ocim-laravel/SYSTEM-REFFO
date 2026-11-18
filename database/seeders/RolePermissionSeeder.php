@@ -38,6 +38,8 @@ class RolePermissionSeeder extends Seeder
         'calendars.view',
         'calendars.manage',
         'system.override',
+        'settings.view',
+        'settings.manage',
     ];
 
     /**

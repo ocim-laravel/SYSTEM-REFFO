@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             DivisionSeeder::class,
             UserSeeder::class,
+            WorkCalendarSeeder::class,
         ]);
     }
 }

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Halaman Tidak Ditemukan — {{ config('app.name', 'Sistem Reffo') }}</title>
+    <style>
+        body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 0; background: #f3f4f6; color: #111827; }
+        .wrap { max-width: 560px; margin: 10vh auto; padding: 24px; }
+        .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 32px; text-align: center; }
+        .code { font-size: 48px; font-weight: 700; color: #6b7280; margin: 0; }
+        .btn { display: inline-block; margin-top: 18px; background: #111827; color: #fff; padding: 10px 14px; border-radius: 6px; text-decoration: none; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div class="card">
+        <p class="code">404</p>
+        <h1>Halaman tidak ditemukan</h1>
+        <p>Alamat yang Anda buka tidak tersedia atau telah dipindahkan.</p>
+        <a class="btn" href="{{ url('/') }}">Kembali ke beranda</a>
+    </div>
+</div>
+</body>
+</html>

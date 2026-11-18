@@ -1,10 +1,13 @@
+@php
+    $systemSettings = app(\App\Services\System\SettingService::class)->all();
+@endphp
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ config('app.name', 'Sistem Reffo') }}</title>
+    <title>{{ $systemSettings['company_name'] ?? config('app.name', 'Sistem Reffo') }}</title>
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     @endif
@@ -21,7 +24,7 @@
         .alert { padding: 10px 12px; border-radius: 6px; margin-bottom: 12px; }
         .alert.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
         .alert.success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
-        input[type="email"], input[type="password"], input[type="text"] { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; }
+        input[type="email"], input[type="password"], input[type="text"], input[type="time"], input[type="file"] { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; }
         label { display: block; margin-bottom: 6px; font-weight: 600; }
         .field { margin-bottom: 14px; }
         ul#realtime-log { margin-top: 12px; padding-left: 18px; }
@@ -32,6 +35,7 @@
         .sidebar { width: 232px; flex: 0 0 232px; background: #fff; border-right: 1px solid #e5e7eb; padding: 16px; box-sizing: border-box; }
         .sidebar-brand { padding-bottom: 14px; border-bottom: 1px solid #e5e7eb; margin-bottom: 14px; }
         .sidebar-brand .muted { margin-top: 4px; }
+        .sidebar-logo { max-height: 40px; max-width: 100%; margin-bottom: 8px; object-fit: contain; }
         .badge { display: inline-block; margin-top: 8px; background: #eef2ff; color: #3730a3; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; }
         .menu-section { margin-bottom: 16px; }
         .menu-title { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #9ca3af; margin-bottom: 6px; }
@@ -40,7 +44,7 @@
         .menu-link.active { background: #111827; color: #fff; }
         .menu-link.disabled { color: #9ca3af; cursor: default; }
         .main { flex: 1; padding: 24px; box-sizing: border-box; }
-        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px; }
         table { width: 100%; border-collapse: collapse; }
         th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #e5e7eb; font-size: 14px; }
         th { color: #6b7280; font-weight: 600; }
@@ -53,43 +57,66 @@
     data-user-role="{{ auth()->user()?->roleEnum()?->value ?? '' }}"
     data-user-division="{{ auth()->user()?->division?->code ?? '' }}"
 >
-    @auth
-        <div class="app-shell">
-            @include('layouts.partials.sidebar')
+@auth
+    @php
+        $notificationService = app(\App\Services\System\NotificationService::class);
+        $breadcrumbs = app(\App\Services\System\BreadcrumbService::class)->for(request());
+        $notificationItems = $notificationService->forUser(auth()->user());
+        $unreadCount = $notificationService->unreadCount(auth()->user());
+    @endphp
+    <div class="app-shell">
+        @include('layouts.partials.sidebar')
 
-            <main class="main">
-                <div class="topbar">
-                    <div>
-                        <strong>{{ config('app.name') }}</strong>
-                        <div class="muted">
-                            Masuk sebagai: {{ auth()->user()->name }}
-                            ({{ auth()->user()->roleEnum()?->label() ?? '-' }})
-                        </div>
+        <main class="main">
+            @include('layouts.partials.breadcrumb')
+
+            <div class="topbar">
+                <div>
+                    <strong>{{ $systemSettings['company_name'] ?: config('app.name') }}</strong>
+                    <div class="muted">
+                        Masuk sebagai: {{ auth()->user()->name }}
+                        ({{ auth()->user()->roleEnum()?->label() ?? '-' }})
                     </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                    @include('layouts.partials.notifications')
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit" class="btn secondary">Logout</button>
                     </form>
                 </div>
+            </div>
 
-                <div class="card">
-                    @if (session('status'))
-                        <div class="alert success">
-                            {{ session('status') }}
-                        </div>
-                    @endif
-
-                    @yield('content')
-                </div>
-            </main>
-        </div>
-    @else
-        <div class="container">
             <div class="card">
+                @if (session('status'))
+                    <div class="alert success">
+                        {{ session('status') }}
+                    </div>
+                @endif
+
+                @if (session('error'))
+                    <div class="alert error">
+                        {{ session('error') }}
+                    </div>
+                @endif
+
                 @yield('content')
             </div>
+        </main>
+    </div>
+@else
+    <div class="container">
+        <div class="card">
+            @if (session('error'))
+                <div class="alert error">
+                    {{ session('error') }}
+                </div>
+            @endif
+
+            @yield('content')
         </div>
-    @endauth
-    @stack('scripts')
+    </div>
+@endauth
+@stack('scripts')
 </body>
 </html>

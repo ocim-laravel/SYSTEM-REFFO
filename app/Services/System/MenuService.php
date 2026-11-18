@@ -46,6 +46,7 @@ class MenuService
                     ['key' => 'users', 'label' => 'Pengguna', 'route' => 'system.users.index', 'permission' => 'users.view'],
                     ['key' => 'work-calendars', 'label' => 'Kalender Kerja', 'route' => 'system.work-calendars.index', 'permission' => 'calendars.view'],
                     ['key' => 'overrides', 'label' => 'Override', 'route' => 'system.overrides.index', 'permission' => 'system.override'],
+                    ['key' => 'settings', 'label' => 'Pengaturan', 'route' => 'system.settings.index', 'permission' => 'settings.view'],
                 ],
             ],
         ];

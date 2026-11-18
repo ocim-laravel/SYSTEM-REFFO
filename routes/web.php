@@ -7,8 +7,10 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Operator\DashboardController as OperatorDashboardController;
 use App\Http\Controllers\System\DivisionController;
+use App\Http\Controllers\System\NotificationController;
 use App\Http\Controllers\System\OverrideController;
 use App\Http\Controllers\System\RealtimeTestController;
+use App\Http\Controllers\System\SettingController;
 use App\Http\Controllers\System\UserController;
 use App\Http\Controllers\System\WorkCalendarController;
 use Illuminate\Support\Facades\Route;
@@ -39,6 +41,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/password/change', [PasswordChangeController::class, 'edit'])->name('password.change');
     Route::put('/password/change', [PasswordChangeController::class, 'update'])->name('password.change.update');
 
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::patch('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+    Route::patch('/notifications/{notification}/read', [NotificationController::class, 'update'])->name('notifications.update');
+
     Route::prefix('system')->name('system.')->group(function () {
         Route::resource('divisions', DivisionController::class)->except('show');
         Route::resource('users', UserController::class)->except('show');
@@ -46,6 +52,8 @@ Route::middleware('auth')->group(function () {
         Route::get('users/{user}/reset-password', [UserController::class, 'editPassword'])->name('users.edit-password');
         Route::put('users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
         Route::resource('work-calendars', WorkCalendarController::class)->except('show');
+        Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
+        Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
         Route::get('overrides', [OverrideController::class, 'index'])->name('overrides.index');
         Route::get('overrides/create', [OverrideController::class, 'create'])->name('overrides.create');
         Route::post('overrides', [OverrideController::class, 'store'])->name('overrides.store');
