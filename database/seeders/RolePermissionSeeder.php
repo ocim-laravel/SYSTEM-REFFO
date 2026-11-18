@@ -37,6 +37,7 @@ class RolePermissionSeeder extends Seeder
         'users.manage',
         'calendars.view',
         'calendars.manage',
+        'system.override',
     ];
 
     /**

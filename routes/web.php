@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Operator\DashboardController as OperatorDashboardController;
 use App\Http\Controllers\System\DivisionController;
+use App\Http\Controllers\System\OverrideController;
 use App\Http\Controllers\System\RealtimeTestController;
 use App\Http\Controllers\System\UserController;
 use App\Http\Controllers\System\WorkCalendarController;
@@ -45,6 +46,9 @@ Route::middleware('auth')->group(function () {
         Route::get('users/{user}/reset-password', [UserController::class, 'editPassword'])->name('users.edit-password');
         Route::put('users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
         Route::resource('work-calendars', WorkCalendarController::class)->except('show');
+        Route::get('overrides', [OverrideController::class, 'index'])->name('overrides.index');
+        Route::get('overrides/create', [OverrideController::class, 'create'])->name('overrides.create');
+        Route::post('overrides', [OverrideController::class, 'store'])->name('overrides.store');
     });
 });
 
