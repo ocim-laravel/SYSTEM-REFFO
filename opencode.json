@@ -1,0 +1,29 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": ["docs/plan/*.md"],
+  "permissions": [
+    { "action": "shell", "resource": "*", "effect": "ask" },
+
+    { "action": "shell", "resource": "git status*", "effect": "allow" },
+    { "action": "shell", "resource": "git diff*", "effect": "allow" },
+    { "action": "shell", "resource": "git log*", "effect": "allow" },
+    { "action": "shell", "resource": "php artisan test*", "effect": "allow" },
+    { "action": "shell", "resource": "php artisan route:list*", "effect": "allow" },
+    { "action": "shell", "resource": "./vendor/bin/pint*", "effect": "allow" },
+
+    { "action": "shell", "resource": "php artisan migrate*", "effect": "ask" },
+    { "action": "shell", "resource": "php artisan db:seed*", "effect": "ask" },
+    { "action": "shell", "resource": "composer require*", "effect": "ask" },
+    { "action": "shell", "resource": "npm install*", "effect": "ask" },
+
+    { "action": "shell", "resource": "git push*", "effect": "deny" },
+    { "action": "shell", "resource": "php artisan db:wipe*", "effect": "deny" },
+    { "action": "shell", "resource": "php artisan migrate:fresh*", "effect": "deny" },
+    { "action": "shell", "resource": "rm -rf *", "effect": "deny" },
+
+    { "action": "edit", "resource": "docs/plan/*", "effect": "ask" },
+    { "action": "edit", "resource": "database/migrations/*", "effect": "ask" },
+    { "action": "edit", "resource": ".env", "effect": "ask" },
+    { "action": "edit", "resource": "AGENTS.md", "effect": "ask" }
+  ]
+}
