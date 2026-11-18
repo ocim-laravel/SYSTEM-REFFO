@@ -1,5 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "model": "opencode/big-pickle",
   "instructions": ["docs/plan/*.md"],
   "permissions": [
     { "action": "shell", "resource": "*", "effect": "ask" },

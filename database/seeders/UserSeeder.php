@@ -2,35 +2,41 @@
 
 namespace Database\Seeders;
 
+use App\Models\Division;
 use App\Models\User;
+use App\Services\System\DemoAccountService;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
+/**
+ * Akun demo untuk tiap role awal (AC-10-2 / gate PH-00).
+ *
+ * Ini adalah akun demo pengembangan: password diset ulang setiap seeder
+ * dijalankan agar gate PH-00 mudah diuji. Jangan dipakai di production.
+ */
 class UserSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        User::updateOrCreate(
-            ['email' => 'admin@reffo.test'],
-            [
-                'name' => 'Administrator',
-                'password' => Hash::make('admin12345'),
-                'role' => 'admin',
-                'is_active' => true,
-            ]
-        );
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        User::updateOrCreate(
-            ['email' => 'operator@reffo.test'],
-            [
-                'name' => 'Operator',
-                'password' => Hash::make('operator12345'),
-                'role' => 'operator',
-                'is_active' => true,
-            ]
-        );
+        foreach (DemoAccountService::accounts() as $data) {
+            $user = User::firstOrNew(['email' => $data['email']]);
+
+            $user->name = $data['name'];
+            $user->division_id = $data['division'] === null
+                ? null
+                : Division::where('code', $data['division'])->value('id');
+            $user->is_active = true;
+            $user->must_change_password = false;
+            $user->password = DemoAccountService::PASSWORD;
+
+            $user->save();
+
+            if (Role::where('name', $data['role'])->exists()) {
+                $user->syncRoles([$data['role']]);
+            }
+        }
     }
 }

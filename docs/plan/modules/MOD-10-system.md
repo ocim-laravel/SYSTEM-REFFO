@@ -1,4 +1,3 @@
-# MOD-10 — System Management (Fondasi)
 
 **Fase:** PH-00 · **Divisi:** Owner / IT
 **Aturan:** BR-07, BR-17, BR-18
