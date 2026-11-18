@@ -22,12 +22,24 @@ class LoginController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+        $remember = $request->boolean('remember');
+
+        if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
 
             $user = $request->user();
 
-            if ($user && $user->role === 'admin') {
+            if (! $user->is_active) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return back()->withErrors([
+                    'email' => 'Akun Anda nonaktif. Hubungi administrator.',
+                ])->onlyInput('email');
+            }
+
+            if ($user->role === 'admin') {
                 return redirect()->intended(route('admin.dashboard'));
             }
 

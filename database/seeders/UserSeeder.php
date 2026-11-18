@@ -19,6 +19,7 @@ class UserSeeder extends Seeder
                 'name' => 'Administrator',
                 'password' => Hash::make('admin12345'),
                 'role' => 'admin',
+                'is_active' => true,
             ]
         );
 
@@ -28,6 +29,7 @@ class UserSeeder extends Seeder
                 'name' => 'Operator',
                 'password' => Hash::make('operator12345'),
                 'role' => 'operator',
+                'is_active' => true,
             ]
         );
     }
