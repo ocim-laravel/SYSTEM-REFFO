@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Models\Division;
 use App\Models\User;
+use App\Models\WorkCalendar;
 use App\Policies\DivisionPolicy;
 use App\Policies\UserPolicy;
+use App\Policies\WorkCalendarPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -26,5 +28,6 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(Division::class, DivisionPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
+        Gate::policy(WorkCalendar::class, WorkCalendarPolicy::class);
     }
 }

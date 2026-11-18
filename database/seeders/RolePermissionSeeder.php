@@ -35,6 +35,8 @@ class RolePermissionSeeder extends Seeder
         'divisions.manage',
         'users.view',
         'users.manage',
+        'calendars.view',
+        'calendars.manage',
     ];
 
     /**
@@ -71,6 +73,8 @@ class RolePermissionSeeder extends Seeder
         'hrd' => [
             'menu.dashboard',
             'menu.hrd',
+            'calendars.view',
+            'calendars.manage',
         ],
     ];
 

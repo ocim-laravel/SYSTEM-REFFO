@@ -9,6 +9,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Operator\DashboardController as OperatorDashboardController;
 use App\Http\Controllers\System\DivisionController;
 use App\Http\Controllers\System\UserController;
+use App\Http\Controllers\System\WorkCalendarController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -43,6 +44,7 @@ Route::middleware('auth')->group(function () {
         Route::patch('users/{user}/active', [UserController::class, 'toggleActive'])->name('users.toggle-active');
         Route::get('users/{user}/reset-password', [UserController::class, 'editPassword'])->name('users.edit-password');
         Route::put('users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
+        Route::resource('work-calendars', WorkCalendarController::class)->except('show');
     });
 });
 

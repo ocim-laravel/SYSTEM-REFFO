@@ -19,6 +19,14 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
+        // Akun demo (reffo12345 x 7) HANYA untuk pengembangan & gate PH-00.
+        // Jangan pernah di-seed di production.
+        if (! app()->environment(['local', 'testing'])) {
+            $this->command?->info('UserSeeder: dilewati (bukan environment local/testing).');
+
+            return;
+        }
+
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         foreach (DemoAccountService::accounts() as $data) {

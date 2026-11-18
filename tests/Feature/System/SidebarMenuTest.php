@@ -49,7 +49,7 @@ class SidebarMenuTest extends TestCase
     {
         $this->assertMenuFor(
             UserRole::Owner,
-            ['dashboard', 'customer', 'order', 'design', 'production', 'finishing', 'delivery', 'finance', 'hrd', 'material', 'reports', 'divisions'],
+            ['dashboard', 'customer', 'order', 'design', 'production', 'finishing', 'delivery', 'finance', 'hrd', 'material', 'reports', 'divisions', 'users', 'work-calendars'],
             [],
         );
     }
@@ -105,12 +105,12 @@ class SidebarMenuTest extends TestCase
     }
 
     #[Test]
-    public function hrd_only_sees_hrd_menu(): void
+    public function hrd_only_sees_hrd_and_work_calendar_menu(): void
     {
         $this->assertMenuFor(
             UserRole::Hrd,
-            ['dashboard', 'hrd'],
-            ['customer', 'order', 'design', 'production', 'finance', 'delivery', 'divisions'],
+            ['dashboard', 'hrd', 'work-calendars'],
+            ['customer', 'order', 'design', 'production', 'finance', 'delivery', 'divisions', 'users'],
         );
     }
 }
