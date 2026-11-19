@@ -11,7 +11,7 @@
 Status: **BERJALAN** *(fase aktif ditetapkan awal sesi; gate PH-01 disetujui Owner 19 November 2026 — lihat arsip PH-01; ADR-004: status awal order tergantung pembuatnya; ADR-005: perilaku pembatalan; ADR-006: dompdf untuk PDF ringkasan)*
 Estimasi: Minggu 9–12
 Modul: MOD-02 (Admin & Order)
-Sesi ini: **AC-02-7 — guard item ACC (BR-05)**, dilanjutkan menyiapkan **data demo gate PH-02** (1 pelanggan + 1 order 4 item). AC-02-8 (PDF) selesai di sesi sebelumnya.
+Sesi ini: **AC-02-7 — guard item ACC (BR-05)** + **data demo gate PH-02** (1 pelanggan + 1 order 4 item, kode `ORD-2026-0001`). AC-02-8 (PDF) selesai di sesi sebelumnya.
 
 ### Ruang lingkup PH-02 (HANYA ini)
 - [x] **AC-02-1** Order dengan 3 item menghitung total benar, termasuk diskon *(`OrderService::create()`: subtotal `Σ qty × unit_price`, dikurangi diskon, ditambah `delivery_fee` sekali per order BR-14; `tax` tidak masuk rumus; feature test)*
@@ -30,8 +30,14 @@ Sesi ini: **AC-02-7 — guard item ACC (BR-05)**, dilanjutkan menyiapkan **data 
 
 ### Kriteria selesai PH-02 (gate)
 - [x] AC-02-1 … AC-02-8 lulus (lihat `docs/plan/modules/MOD-02-order.md`) — AC-02-1 s.d. AC-02-8 lulus (AC-02-7 = guard ACC tanpa bypass; bypass Change Request menyusul di MOD-03)
-- [ ] Demo 1 order 4 item (campur printing & reklame) sampai antrean desain
-- [x] `php artisan test` hijau & `pint` bersih *(199 test / 854 assertion setelah AC-02-7)*
+- [ ] Demo 1 order 4 item (campur printing & reklame) sampai antrean desain *(data siap: `ORD-2026-0001`, masih `draft` — tinggal divalidasi Admin)*
+- [x] `php artisan test` hijau & `pint` bersih *(200 test / 869 assertion setelah data demo gate)*
+
+### Data demo gate PH-02 (disiapkan 19 November 2026)
+- Pelanggan: **PT Demo Gate PH-02** — `CUS-2026-0012`, perusahaan, telepon `081299988877`, alamat `Jl. Demo Gate No. 1, Bandung`.
+- Order: **`ORD-2026-0001`** (dibuat Admin, status `draft`) — diskon `50.000`, biaya kirim `30.000`, subtotal `2.400.000`, **total Rp 2.380.000,00**.
+- 4 item: Kartu Nama Premium (printing, 2 box × 150.000, normal), Brosur A5 (printing, 500 pcs × 2.500, h1), Spanduk Reklame (reklame, 5 m2 × 80.000, urgent), Sticker Vinyl (reklame, 10 m2 × 45.000, normal).
+- Dibuat dengan `php artisan db:seed --class=DemoGatePh02Seeder` (idempoten, local/testing saja). Belum divalidasi — demo gate tinggal validasi Admin agar item masuk antrean desain.
 
 ---
 
@@ -134,3 +140,4 @@ Sesi ini: **AC-02-7 — guard item ACC (BR-05)**, dilanjutkan menyiapkan **data 
 | 2026-11-19 | PH-02 (MOD-02) | ADR-005 — perilaku pembatalan order disetujui Owner | `docs/plan/07-decisions/ADR-005-cancellation.md` (baru), `PROGRESS.md` | Lima keputusan ditetapkan & disetujui Owner: (1) item ikut dibatalkan saat order dibatalkan; (2) tombol Validasi muncul untuk `draft` & `pending_validation`; (3) alasan pembatalan minimal 5 karakter; (4) pembatalan order `completed`/`delivering` dibiarkan sekarang; (5) filter tanggal daftar order memakai `created_at`. Hanya menambah file ADR + memperbarui `PROGRESS.md`; kode, migration, dan `docs/plan/**` lain tidak disentuh. |
 | 2026-11-19 | PH-02 (MOD-02) | ADR-006 (disetujui Owner) + AC-02-8 (PDF ringkasan order) | `docs/plan/07-decisions/ADR-006-dompdf.md` (baru), `composer.json`, `composer.lock`, `app/Http/Controllers/Order/OrderController.php`, `routes/web.php`, `resources/views/orders/pdf.blade.php`, `resources/views/orders/show.blade.php`, `tests/Feature/Order/OrderPdfTest.php`, `PROGRESS.md` | USULAN paket `barryvdh/laravel-dompdf` disetujui Owner → ADR-006 dibuat (hanya file baru di `docs/plan/07-decisions/`), `composer require` hanya paket ini (+ dependency transitive). `exportPdf()` otorisasi `orders.view`, unduh `{$code}.pdf`; tombol "Unduh Ringkasan (PDF)" di detail. PDF memuat pelanggan (kode/nama/tipe/telepon/alamat), item, subtotal/diskon/biaya kirim/total/status/deadline/catatan. Feature test: 200, `application/pdf`, nama file kode order, konten memuat nama pelanggan & total; 403 tanpa izin. `php artisan test` hijau (193/830), `pint --dirty` bersih. MOD-03 dst & migration tidak disentuh. |
 | 2026-11-19 | PH-02 (MOD-02) | AC-02-7 — guard item ACC (BR-05) | `app/Services/Order/OrderService.php`, `tests/Feature/Order/AccItemGuardTest.php` (baru), `PROGRESS.md` | `assertItemMutable()` melempar `ValidationException` (key `item`) bila `$item->status === ItemStatus::Acc`; dipanggil di awal `updateItemPrice()`/`deleteItem()` dan di `changeItemStatus()` setelah early-return status sama. Komentar singkat di guard: bypass via Change Request disusul MOD-03 (belum diimplementasikan). 6 feature test: harga/hapus/status ditolak, regresi item `draft` & `queued_design` tetap lolos, no-op ACC diizinkan, integritas #7 (0 riwayat status tertulis pada percobaan gagal). `php artisan test` hijau (199/854), `pint --dirty` bersih. Migration, `docs/plan/**`, MOD-03 dst tidak disentuh. |
+| 2026-11-19 | PH-02 (MOD-02) | Data demo gate PH-02 (4 item) — kode order `ORD-2026-0001` | `database/seeders/DemoGatePh02Seeder.php` (baru), `tests/Feature/Order/DemoGatePh02SeederTest.php` (baru), `PROGRESS.md` | Seeder idempoten (local/testing saja) memakai `CustomerService::create()` + `OrderService::create()`: pelanggan `CUS-2026-0012` "PT Demo Gate PH-02" (perusahaan, 081299988877, Jl. Demo Gate No. 1, Bandung) dan order `ORD-2026-0001` (Admin, `draft`, diskon 50.000, kirim 30.000, subtotal 2.400.000, total **2.380.000,00**) dengan 4 item campur printing/reklame (prioritas normal/h1/urgent/normal). Dijalankan di MySQL lokal `DB-sistem-reffo-2`; dijalankan ulang → "data sudah ada, dilewati". Feature test memeriksa data pelanggan, status order, nominal, rincian 4 item, dan idempotensi. `php artisan test` hijau (200/869), `pint --dirty` bersih. Tidak ada migration, `docs/plan/**`, atau modul lain yang disentuh; order sengaja belum divalidasi. |
