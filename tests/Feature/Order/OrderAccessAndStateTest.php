@@ -327,6 +327,11 @@ class OrderAccessAndStateTest extends TestCase
         $item = $order->items->firstOrFail();
 
         $this->assertSame('pcs', $item->specification['mode']);
+        $this->assertSame([
+            'printing' => true,
+            'kirim' => false,
+            'reklame' => false,
+        ], $item->specification['services']);
         $this->assertSame('3.00', (string) $item->qty);
         $this->assertSame('pcs', $item->unit);
         $this->assertSame('150000.00', (string) $item->total);

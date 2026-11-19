@@ -602,6 +602,8 @@ class OrderService
         $deliveryAddress = $context['delivery_address'];
         $tindakan = $context['tindakan'];
 
+        $specification['services'] = $services;
+
         if ($category === ItemCategory::Printing && ($specification['mode'] ?? null) === 'm2') {
             $luasM2 = bcmul(
                 bcmul($this->amount($specification['ukuran_panjang'] ?? 0), $this->amount($specification['ukuran_lebar'] ?? 0), 2),
@@ -620,14 +622,20 @@ class OrderService
                 'luas_m2' => $luasM2,
                 'jenis_finishing' => $specification['jenis_finishing'] ?? null,
                 'tindakan' => $specification['tindakan'] ?? null,
+                'services' => $services,
             ];
 
             $item['specification'] = $specification;
         }
 
         if ($category === ItemCategory::Printing && ($specification['mode'] ?? null) === 'pcs') {
-            $item['qty'] = $this->amount($specification['quantity_asli'] ?? $item['qty'] ?? 1);
-            $item['specification'] = array_merge($specification, ['mode' => 'pcs']);
+            $itemQty = $this->amount($item['qty'] ?? 1);
+            $item['qty'] = $itemQty;
+            $item['specification'] = array_merge($specification, [
+                'mode' => 'pcs',
+                'quantity_asli' => $itemQty,
+                'services' => $services,
+            ]);
         }
 
         if (($services['reklame'] ?? false) && $category === ItemCategory::Reklame && $tindakan !== []) {

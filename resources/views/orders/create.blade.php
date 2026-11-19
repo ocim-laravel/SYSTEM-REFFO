@@ -44,10 +44,10 @@
             </div>
         </div>
 
-        <div class="field">
-            <label>Jenis Layanan</label>
+        <fieldset class="field" style="border:0;padding:0">
+            <legend style="font-weight:600;margin-bottom:6px">Jenis Layanan</legend>
             <label>
-                <input type="checkbox" name="services[printing]" value="1" @checked(old('services.printing', true))>Printing
+                <input type="checkbox" name="services[printing]" value="1" @checked(old('services') === null ? true : (bool) old('services.printing'))>Printing
             </label>
             <label>
                 <input type="checkbox" name="services[kirim]" value="1" @checked(old('services.kirim'))>Kirim
@@ -55,7 +55,7 @@
             <label>
                 <input type="checkbox" name="services[reklame]" value="1" @checked(old('services.reklame'))>Reklame
             </label>
-        </div>
+        </fieldset>
 
         <div class="field" id="delivery_address_field" style="display:none">
             <label for="delivery_address">Alamat Pengiriman/Pemasangan</label>
@@ -205,6 +205,7 @@
             const reklameCheckbox = document.querySelector('input[name="services[reklame]"]');
             const deliveryAddressField = document.getElementById('delivery_address_field');
             const deliveryAddressInput = document.getElementById('delivery_address');
+            const initialItems = @json(old('items', []));
             let index = 0;
 
             function renumber() {
@@ -216,7 +217,8 @@
                 });
             }
 
-            function addItem() {
+            function addItem(initialData) {
+                initialData = initialData || {};
                 const html = template.replaceAll('__INDEX__', String(index));
                 const wrap = document.createElement('div');
                 wrap.innerHTML = html.trim();
@@ -224,45 +226,117 @@
                 row.dataset.index = String(index);
                 attachRowHandlers(row);
                 container.appendChild(row);
+
+                const specification = initialData.specification || {};
+                const setValue = function (selector, value) {
+                    const field = row.querySelector(selector);
+                    if (field && value !== undefined && value !== null) {
+                        field.value = value;
+                    }
+                };
+
+                setValue('input[name="items[' + index + '][title]"]', initialData.title);
+                setValue('select[name="items[' + index + '][category]"]', initialData.category || 'printing');
+                setValue('input[name="items[' + index + '][qty]"]', initialData.qty || 1);
+                setValue('input[name="items[' + index + '][unit]"]', initialData.unit || '');
+                setValue('input[name="items[' + index + '][unit_price]"]', initialData.unit_price || 0);
+                setValue('select[name="items[' + index + '][priority]"]', initialData.priority || 'normal');
+                setValue('input[name="items[' + index + '][deadline_at]"]', initialData.deadline_at || '');
+
+                const mode = specification.mode === 'm2' ? 'm2' : 'pcs';
+                const modeInput = row.querySelector('input[name="items[' + index + '][specification][mode]"][value="' + mode + '"]');
+                if (modeInput) {
+                    modeInput.checked = true;
+                }
+                setValue('input[name="items[' + index + '][specification][bahan]"]', specification.bahan);
+                setValue('input[name="items[' + index + '][specification][ukuran_panjang]"]', specification.ukuran_panjang);
+                setValue('input[name="items[' + index + '][specification][ukuran_lebar]"]', specification.ukuran_lebar);
+                setValue('input[name="items[' + index + '][specification][quantity_asli]"]', specification.quantity_asli || initialData.qty || 1);
+                setValue('select[name="items[' + index + '][specification][jenis_finishing]"]', specification.jenis_finishing);
+
+                const actions = Array.isArray(specification.tindakan) ? specification.tindakan : [];
+                row.querySelectorAll('input[name="reklame_actions[]"]').forEach(function (action) {
+                    action.checked = actions.indexOf(action.value) !== -1;
+                });
+
+                refreshItemRowUI(row);
                 index++;
                 renumber();
             }
 
             function itemInput(row, name) {
-                return row.querySelector('input[name="items[' + row.dataset.index + '][' + name + '"]');
+                return row.querySelector('input[name="items[' + row.dataset.index + '][' + name + ']"]');
             }
 
             function itemSelect(row, name) {
-                return row.querySelector('select[name="items[' + row.dataset.index + '][' + name + '"]');
+                return row.querySelector('select[name="items[' + row.dataset.index + '][' + name + ']"]');
+            }
+
+            function selectedMode(row) {
+                return row.querySelector('input[name="items[' + row.dataset.index + '][specification][mode]"]:checked')?.value || 'pcs';
             }
 
             function itemRadio(row, value) {
-                const input = row.querySelector('input[name="items[' + row.dataset.index + '][specification][mode]"]');
-                if (input === null) {
-                    return null;
+                return selectedMode(row) === value;
+            }
+
+            function setFieldState(field, enabled, required) {
+                if (!field) {
+                    return;
                 }
 
-                if (value === undefined) {
-                    return input;
-                }
-
-                return input.value === value ? input : null;
+                field.disabled = !enabled;
+                field.required = Boolean(required && enabled);
             }
 
             function refreshItemRowUI(row) {
                 const category = itemSelect(row, 'category')?.value;
-                const modeM2 = itemRadio(row, 'm2');
+                const mode = selectedMode(row);
                 const boxPcs = row.querySelector('[data-mode-box="pcs"]');
                 const boxM2 = row.querySelector('[data-mode-box="m2"]');
                 const isPrinting = category === 'printing';
-                const isModeM2 = modeM2 !== null;
+                const isModeM2 = isPrinting && mode === 'm2';
+                const quantityInput = row.querySelector('input[name="items[' + row.dataset.index + '][specification][quantity_asli]"]');
+                const lengthInput = row.querySelector('input[name="items[' + row.dataset.index + '][specification][ukuran_panjang]"]');
+                const widthInput = row.querySelector('input[name="items[' + row.dataset.index + '][specification][ukuran_lebar]"]');
+                const unitInput = itemInput(row, 'unit');
+                const qtyInput = itemInput(row, 'qty');
 
                 if (boxPcs) {
-                    boxPcs.style.display = isPrinting && ! isModeM2 ? '' : 'none';
+                    boxPcs.style.display = isPrinting && !isModeM2 ? '' : 'none';
                 }
 
                 if (boxM2) {
-                    boxM2.style.display = isPrinting && isModeM2 ? '' : 'none';
+                    boxM2.style.display = isModeM2 ? '' : 'none';
+                }
+
+                row.querySelectorAll('input[name$="[specification][mode]"]').forEach(function (input) {
+                    input.disabled = !isPrinting;
+                });
+                setFieldState(quantityInput, isModeM2, isModeM2);
+                setFieldState(lengthInput, isModeM2, isModeM2);
+                setFieldState(widthInput, isModeM2, isModeM2);
+
+                if (isModeM2) {
+                    if (quantityInput && qtyInput && quantityInput.value) {
+                        qtyInput.value = quantityInput.value;
+                    }
+                    if (unitInput) {
+                        unitInput.value = 'm2';
+                    }
+                    if (qtyInput) {
+                        qtyInput.disabled = true;
+                    }
+                } else {
+                    if (qtyInput) {
+                        qtyInput.disabled = false;
+                    }
+                    if (quantityInput && qtyInput && !quantityInput.value) {
+                        quantityInput.value = qtyInput.value || '1';
+                    }
+                    if (unitInput && isPrinting) {
+                        unitInput.value = 'pcs';
+                    }
                 }
             }
 
@@ -280,9 +354,14 @@
 
                         if (radio.value === 'm2') {
                             const unitInput = itemInput(row, 'unit');
+                            const qtyInput = itemInput(row, 'qty');
+                            const quantityInput = row.querySelector('input[name="items[' + row.dataset.index + '][specification][quantity_asli]"]');
 
                             if (unitInput) {
                                 unitInput.value = 'm2';
+                            }
+                            if (quantityInput && qtyInput) {
+                                quantityInput.value = qtyInput.value || '1';
                             }
                         } else {
                             const unitInput = itemInput(row, 'unit');
@@ -317,16 +396,19 @@
                 let subtotal = 0;
 
                 container.querySelectorAll('.item-row').forEach(function (row) {
-                    const qty = parseFloat(itemInput(row, 'qty')?.value) || 0;
+                    let qty = parseFloat(itemInput(row, 'qty')?.value) || 0;
                     const unitPrice = parseFloat(itemInput(row, 'unit_price')?.value) || 0;
-                    let total = qty * unitPrice;
+                    let total;
                     const modeM2 = itemRadio(row, 'm2');
 
                     if (modeM2) {
                         const panjang = parseFloat(row.querySelector('input[name="items[' + row.dataset.index + '][specification][ukuran_panjang]"]')?.value) || 0;
                         const lebar = parseFloat(row.querySelector('input[name="items[' + row.dataset.index + '][specification][ukuran_lebar]"]')?.value) || 0;
-                        const luas = panjang * lebar * qty;
+                        const quantity = parseFloat(row.querySelector('input[name="items[' + row.dataset.index + '][specification][quantity_asli]"]')?.value) || 0;
+                        const luas = panjang * lebar * quantity;
                         total = luas * unitPrice;
+                    } else {
+                        total = qty * unitPrice;
                     }
 
                     subtotal += total;
@@ -366,7 +448,7 @@
             document.getElementById('delivery_fee')?.addEventListener('input', updatePreview);
 
             if (kirimCheckbox) {
-                kirimCheckbox.addEventListener('change', function () {
+                function refreshDeliveryAddress() {
                     if (kirimCheckbox.checked) {
                         deliveryAddressField.style.display = '';
                         deliveryAddressInput.disabled = false;
@@ -374,11 +456,14 @@
                         deliveryAddressField.style.display = 'none';
                         deliveryAddressInput.disabled = true;
                     }
-                });
+                }
+
+                kirimCheckbox.addEventListener('change', refreshDeliveryAddress);
+                refreshDeliveryAddress();
             }
 
             if (reklameCheckbox) {
-                reklameCheckbox.addEventListener('change', function () {
+                function refreshReklameActions() {
                     container.querySelectorAll('.item-actions').forEach(function (group) {
                         group.querySelectorAll('label').forEach(function (label) {
                             label.style.display = reklameCheckbox.checked ? '' : 'none';
@@ -386,13 +471,29 @@
 
                         group.querySelectorAll('input').forEach(function (input) {
                             input.disabled = ! reklameCheckbox.checked;
+                            if (!reklameCheckbox.checked) {
+                                input.checked = false;
+                            }
                         });
                     });
-                });
+                }
+
+                reklameCheckbox.addEventListener('change', refreshReklameActions);
+                refreshReklameActions();
             }
 
             document.getElementById('add-item').addEventListener('click', addItem);
-            addItem();
+            if (initialItems.length > 0) {
+                initialItems.forEach(function (item) {
+                    addItem(item);
+                });
+            } else {
+                addItem();
+            }
+
+            if (reklameCheckbox) {
+                reklameCheckbox.dispatchEvent(new Event('change'));
+            }
 
             updatePreview();
         })();
