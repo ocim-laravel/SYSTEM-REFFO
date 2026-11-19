@@ -56,6 +56,18 @@ Sesi ini: **AC-02-7 â€” guard item ACC (BR-05)** + **data demo gate PH-02**
 
 ---
 
+### Revisi UI pembuatan order - **disetujui Owner, 19 November 2026** (ADR-007)
+- Diskon tetap ada, dipindah setelah subtotal; default `0`.
+- Biaya kirim tetap satu angka total; checkbox `printing`/`kirim`/`reklame` hanya label jenis layanan. Jika `kirim` tercentang, tampil field alamat sebelum catatan.
+- `produk jadi (pcs)` adalah sub-tipe dari `printing` (bukan kategori baru): mode **pcs** (x banner, rollbanner, stiker A3, A board, poster) dan mode **m²** (MMT banner, stiker ritrama, spanduk kain - dari panjang × lebar × qty).
+- Spesifikasi item disimpan di `specification` (json): `bahan`, `ukuran_panjang`, `ukuran_lebar`, `jenis_finishing`, dan `tindakan` (konstruksi/rangka, pemasangan). Enum baru `FinishingType` dan `ActionType` dibuat saat implementasi. Luas m² ditentukan dari panjang × lebar × qty.
+- `tindakan` tampil hanya jika checkbox `reklame` tercentang.
+- `konstruksi/rangka` dan `pemasangan` hanya menjadi catatan item pada PH-02; penjadwalan nyata tetap di PH-06.
+- Input pelanggan tetap memakai pelanggan aktif tersimpan; tombol tambah membuka `/customers/create` di tab baru, bukan modal/AJAX.
+- **Status:** USULAN PERUBAHAN disetujui - siap dikerjakan sebagai sesi revisi MOD-02.
+
+---
+
 ### Keputusan implementasi PH-02 â€” **disetujui Owner, 19 November 2026** (ADR-003)
 - `orders.customer_id` memakai `constrained()` (RESTRICT): pelanggan yang sudah punya order **tidak bisa dihapus permanen**. Diterima â€” melindungi riwayat order. Alternatif "lepas" hubungan = nonaktifkan pelanggan, bukan menghapus.
 - `order_items.qty` memakai `decimal(15,2)` agar bisa menerima `12,5 mÂ²` untuk reklame. Diterima.
