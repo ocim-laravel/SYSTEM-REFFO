@@ -2,6 +2,7 @@
 
 namespace App\Services\Order;
 
+use App\Enums\ActionType;
 use App\Enums\ItemCategory;
 use App\Enums\ItemStatus;
 use App\Enums\OrderStatus;
@@ -26,6 +27,11 @@ use Illuminate\Validation\ValidationException;
  * - Pelanggan wajib lolos CustomerService::assertSelectableForOrder() (AC-01-2).
  * - Total = Σ(qty × unit_price) − diskon + delivery_fee; pajak tidak masuk
  *   rumus (MOD-02 "Aturan penerapan"), biaya kirim sekali per order (BR-14).
+ * - Item printing bisa punya sub-tipe mode `pcs` (produk jadi) atau `m2`
+ *   (luas panjang × lebar × quantity — ADR-007 revisi UI). Mode m2 memakai
+ *   luas efektif sebagai qty yang dikalikan unit_price.
+ * - Field layanan (printing/kirim/reklame) & alamat/tindakan disimpan lewat
+ *   `order_items.specification` JSON (kolom existing, ADR-007) tanpa migrasi.
  * - Status item diubah hanya lewat changeItemStatus() agar tiap perubahan
  *   menulis item_status_histories (integritas #7).
  * - Item yang sudah ACC dikunci dari mutasi tanpa Change Request (AC-02-7, BR-05).
@@ -56,10 +62,12 @@ class OrderService
         $customer = Customer::query()->findOrFail($data['customer_id']);
         $this->customers->assertSelectableForOrder($customer);
 
-        return DB::transaction(function () use ($data, $actor, $customer, $meta): Order {
+        $context = $this->orderContext($data);
+
+        return DB::transaction(function () use ($data, $actor, $customer, $meta, $context): Order {
             $subtotal = '0.00';
             foreach ($data['items'] as $item) {
-                $subtotal = bcadd($subtotal, $this->itemTotal($item), 2);
+                $subtotal = bcadd($subtotal, $this->itemTotal($this->prepareItem($item, $context)), 2);
             }
 
             $discount = $this->amount($data['discount'] ?? 0);
@@ -82,6 +90,8 @@ class OrderService
             ]);
 
             foreach (array_values($data['items']) as $index => $item) {
+                $item = $this->prepareItem($item, $context);
+
                 $order->items()->create([
                     'seq' => $index + 1,
                     'title' => $item['title'],
@@ -121,20 +131,23 @@ class OrderService
     {
         $this->assertOrderIsEditable($order);
 
-        return DB::transaction(function () use ($order, $data, $actor, $meta): OrderItem {
-            $seq = (int) $order->items()->max('seq') + 1;
+        $context = $this->orderContext($data);
 
-            $item = $order->items()->create([
+        return DB::transaction(function () use ($order, $data, $actor, $meta, $context): OrderItem {
+            $seq = (int) $order->items()->max('seq') + 1;
+            $item = $this->prepareItem($data, $context);
+
+            $order->items()->create([
                 'seq' => $seq,
-                'title' => $data['title'],
-                'category' => $this->category($data['category'] ?? null),
-                'specification' => $data['specification'] ?? null,
-                'qty' => $this->amount($data['qty'] ?? 1),
-                'unit' => $data['unit'] ?? null,
-                'unit_price' => $this->amount($data['unit_price'] ?? 0),
-                'total' => $this->itemTotal($data),
-                'deadline_at' => $data['deadline_at'] ?? null,
-                'priority' => $this->priority($data['priority'] ?? null),
+                'title' => $item['title'],
+                'category' => $this->category($item['category'] ?? null),
+                'specification' => $item['specification'] ?? null,
+                'qty' => $this->amount($item['qty'] ?? 1),
+                'unit' => $item['unit'] ?? null,
+                'unit_price' => $this->amount($item['unit_price'] ?? 0),
+                'total' => $this->itemTotal($item),
+                'deadline_at' => $item['deadline_at'] ?? null,
+                'priority' => $this->priority($item['priority'] ?? null),
                 'status' => ItemStatus::Draft,
             ]);
 
@@ -509,6 +522,123 @@ class OrderService
         }
 
         return $value === null ? Priority::Normal : Priority::from($value);
+    }
+
+    /**
+     * Konteks layanan & tindakan order yang dipakai saat menyiapkan item
+     * (revisi UI ADR-007): checkbox layanan printing/kirim/reklame, alamat
+     * kirim, dan tindakan reklame.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array{services: array{printing: bool, kirim: bool, reklame: bool}, delivery_address: string, tindakan: array<int, string>}
+     */
+    private function orderContext(array $data): array
+    {
+        $services = is_array($data['services'] ?? null) ? $data['services'] : [];
+
+        return [
+            'services' => [
+                'printing' => (bool) ($services['printing'] ?? false),
+                'kirim' => (bool) ($services['kirim'] ?? false),
+                'reklame' => (bool) ($services['reklame'] ?? false),
+            ],
+            'delivery_address' => trim((string) ($data['delivery_address'] ?? '')),
+            'tindakan' => $this->resolveTindakan($data),
+        ];
+    }
+
+    /**
+     * Tindakan reklame terpilih (dari checkbox `reklame_actions`) yang valid.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<int, string>
+     */
+    private function resolveTindakan(array $data): array
+    {
+        $actions = $data['reklame_actions'] ?? [];
+        if (! is_array($actions)) {
+            return [];
+        }
+
+        $validActions = [];
+
+        foreach ($actions as $action) {
+            if ($action instanceof ActionType) {
+                $validActions[] = $action->value;
+
+                continue;
+            }
+
+            $value = trim((string) $action);
+
+            if ($value === '') {
+                continue;
+            }
+
+            $validActions[] = $value;
+        }
+
+        return array_values(array_unique($validActions));
+    }
+
+    /**
+     * Siapkan item sebelum disimpan ke `order_items` (BR-01, BR-02, ADR-007).
+     *
+     * - Mode `m2` (printing berbasis m²): luas efektif = panjang × lebar ×
+     *   quantity; luas efektif menjadi qty yang dikalikan unit_price, dan
+     *   panjang/lebar/quantity_asli/luas_m2 disimpan di `specification`.
+     * - Mode `pcs` (produk jadi): qty = jumlah produk.
+     * - Layanan & tindakan disimpan lewat `specification` JSON (existing column).
+     *
+     * @param  array<string, mixed>  $item
+     * @param  array{services: array{printing: bool, kirim: bool, reklame: bool}, delivery_address: string, tindakan: array<int, string>}  $context
+     * @return array<string, mixed>
+     */
+    private function prepareItem(array $item, array $context): array
+    {
+        $specification = is_array($item['specification'] ?? null) ? $item['specification'] : [];
+        $category = $this->category($item['category'] ?? null);
+        $services = $context['services'];
+        $deliveryAddress = $context['delivery_address'];
+        $tindakan = $context['tindakan'];
+
+        if ($category === ItemCategory::Printing && ($specification['mode'] ?? null) === 'm2') {
+            $luasM2 = bcmul(
+                bcmul($this->amount($specification['ukuran_panjang'] ?? 0), $this->amount($specification['ukuran_lebar'] ?? 0), 2),
+                $this->amount($specification['quantity_asli'] ?? 0),
+                2,
+            );
+
+            $item['qty'] = $luasM2;
+            $item['unit'] = 'm2';
+            $specification = [
+                'mode' => 'm2',
+                'bahan' => $specification['bahan'] ?? null,
+                'ukuran_panjang' => $this->amount($specification['ukuran_panjang'] ?? 0),
+                'ukuran_lebar' => $this->amount($specification['ukuran_lebar'] ?? 0),
+                'quantity_asli' => $this->amount($specification['quantity_asli'] ?? 0),
+                'luas_m2' => $luasM2,
+                'jenis_finishing' => $specification['jenis_finishing'] ?? null,
+                'tindakan' => $specification['tindakan'] ?? null,
+            ];
+
+            $item['specification'] = $specification;
+        }
+
+        if ($category === ItemCategory::Printing && ($specification['mode'] ?? null) === 'pcs') {
+            $item['qty'] = $this->amount($specification['quantity_asli'] ?? $item['qty'] ?? 1);
+            $item['specification'] = array_merge($specification, ['mode' => 'pcs']);
+        }
+
+        if (($services['reklame'] ?? false) && $category === ItemCategory::Reklame && $tindakan !== []) {
+            $item['specification'] = array_merge($item['specification'] ?? [], ['tindakan' => $tindakan]);
+        }
+
+        if ($deliveryAddress !== '') {
+            $item['specification'] = array_merge($item['specification'] ?? [], ['delivery_address' => $deliveryAddress]);
+        }
+
+        return $item;
     }
 
     /**

@@ -284,4 +284,274 @@ class OrderAccessAndStateTest extends TestCase
             ->assertSee($order1->code)
             ->assertSee($order2->code);
     }
+
+    #[Test]
+    public function it_shows_a_link_to_create_a_new_customer_on_the_order_create_page(): void
+    {
+        $admin = User::factory()->forRole(UserRole::Admin)->create();
+
+        $this->actingAs($admin)
+            ->get(route('orders.create'))
+            ->assertOk()
+            ->assertSee('Tambah Pelanggan')
+            ->assertSee(route('customers.create'))
+            ->assertSee('target="_blank"', false);
+    }
+
+    #[Test]
+    public function it_stores_a_printing_order_with_the_product_mode_item(): void
+    {
+        $admin = User::factory()->forRole(UserRole::Admin)->create();
+        $customer = $this->activeCustomer($admin);
+
+        $response = $this->actingAs($admin)->post(route('orders.store'), [
+            'customer_id' => $customer->id,
+            'services' => ['printing' => true],
+            'items' => [
+                [
+                    'title' => 'Banner X Produk',
+                    'category' => ItemCategory::Printing->value,
+                    'specification' => [
+                        'mode' => 'pcs',
+                        'quantity_asli' => 3,
+                    ],
+                    'qty' => 3,
+                    'unit' => 'pcs',
+                    'unit_price' => 50000,
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $order = Order::query()->firstOrFail();
+        $item = $order->items->firstOrFail();
+
+        $this->assertSame('pcs', $item->specification['mode']);
+        $this->assertSame('3.00', (string) $item->qty);
+        $this->assertSame('pcs', $item->unit);
+        $this->assertSame('150000.00', (string) $item->total);
+    }
+
+    #[Test]
+    public function it_stores_a_printing_order_with_the_square_meter_mode_item_and_effective_area(): void
+    {
+        $admin = User::factory()->forRole(UserRole::Admin)->create();
+        $customer = $this->activeCustomer($admin);
+
+        $response = $this->actingAs($admin)->post(route('orders.store'), [
+            'customer_id' => $customer->id,
+            'services' => ['printing' => true],
+            'items' => [
+                [
+                    'title' => 'Banner MMT',
+                    'category' => ItemCategory::Printing->value,
+                    'specification' => [
+                        'mode' => 'm2',
+                        'bahan' => 'Kain',
+                        'ukuran_panjang' => 2,
+                        'ukuran_lebar' => 1,
+                        'quantity_asli' => 2,
+                        'jenis_finishing' => 'potong',
+                    ],
+                    'qty' => 2,
+                    'unit' => 'm2',
+                    'unit_price' => 100000,
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $order = Order::query()->firstOrFail();
+        $item = $order->items->firstOrFail();
+
+        // Luas efektif = panjang (2) x lebar (1) x quantity (2) = 4 m².
+        $this->assertSame('4.00', (string) $item->qty);
+        $this->assertSame('m2', $item->unit);
+        $this->assertSame('400000.00', (string) $item->total);
+        $this->assertSame('4.00', (string) $item->specification['luas_m2']);
+        $this->assertSame('2.00', (string) $item->specification['quantity_asli']);
+        $this->assertSame('Kain', $item->specification['bahan']);
+        $this->assertSame('2.00', (string) $item->specification['ukuran_panjang']);
+        $this->assertSame('1.00', (string) $item->specification['ukuran_lebar']);
+        $this->assertSame('potong', $item->specification['jenis_finishing']);
+        $this->assertSame('m2', $item->specification['mode']);
+    }
+
+    #[Test]
+    public function it_stores_the_delivery_address_when_the_kirim_service_is_checked(): void
+    {
+        $admin = User::factory()->forRole(UserRole::Admin)->create();
+        $customer = $this->activeCustomer($admin);
+
+        $this->actingAs($admin)
+            ->get(route('orders.create'))
+            ->assertOk()
+            ->assertSee('Alamat Pengiriman/Pemasangan');
+
+        $response = $this->actingAs($admin)->post(route('orders.store'), [
+            'customer_id' => $customer->id,
+            'services' => ['printing' => true, 'kirim' => true],
+            'delivery_address' => 'Jl. Merdeka No. 12, Bandung',
+            'items' => [
+                [
+                    'title' => 'Banner Kirim',
+                    'category' => ItemCategory::Printing->value,
+                    'qty' => 2,
+                    'unit' => 'pcs',
+                    'unit_price' => 50000,
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $order = Order::query()->firstOrFail();
+        $item = $order->items->firstOrFail();
+
+        $this->assertSame('Jl. Merdeka No. 12, Bandung', $item->specification['delivery_address']);
+    }
+
+    #[Test]
+    public function it_does_not_store_the_delivery_address_when_the_kirim_service_is_not_checked(): void
+    {
+        $admin = User::factory()->forRole(UserRole::Admin)->create();
+        $customer = $this->activeCustomer($admin);
+
+        $response = $this->actingAs($admin)->post(route('orders.store'), [
+            'customer_id' => $customer->id,
+            'services' => ['printing' => true],
+            'items' => [
+                [
+                    'title' => 'Banner Tanpa Kirim',
+                    'category' => ItemCategory::Printing->value,
+                    'qty' => 1,
+                    'unit' => 'pcs',
+                    'unit_price' => 50000,
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $order = Order::query()->firstOrFail();
+        $item = $order->items->firstOrFail();
+
+        $this->assertArrayNotHasKey('delivery_address', $item->specification ?? []);
+    }
+
+    #[Test]
+    public function it_shows_reklame_action_fields_and_stores_the_selected_action(): void
+    {
+        $admin = User::factory()->forRole(UserRole::Admin)->create();
+        $customer = $this->activeCustomer($admin);
+
+        $this->actingAs($admin)
+            ->get(route('orders.create'))
+            ->assertOk()
+            ->assertSee('Konstruksi/Rangka')
+            ->assertSee('Pemasangan');
+
+        $response = $this->actingAs($admin)->post(route('orders.store'), [
+            'customer_id' => $customer->id,
+            'services' => ['reklame' => true],
+            'reklame_actions' => ['konstruksi_rangka'],
+            'items' => [
+                [
+                    'title' => 'Spanduk Reklame',
+                    'category' => ItemCategory::Reklame->value,
+                    'qty' => 5,
+                    'unit' => 'm2',
+                    'unit_price' => 80000,
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $order = Order::query()->firstOrFail();
+        $item = $order->items->firstOrFail();
+
+        $this->assertSame(['konstruksi_rangka'], $item->specification['tindakan']);
+    }
+
+    #[Test]
+    public function it_does_not_store_a_reklame_action_when_the_reklame_service_is_not_checked(): void
+    {
+        $admin = User::factory()->forRole(UserRole::Admin)->create();
+        $customer = $this->activeCustomer($admin);
+
+        $response = $this->actingAs($admin)->post(route('orders.store'), [
+            'customer_id' => $customer->id,
+            'items' => [
+                [
+                    'title' => 'Spanduk Reklame',
+                    'category' => ItemCategory::Reklame->value,
+                    'qty' => 5,
+                    'unit' => 'm2',
+                    'unit_price' => 80000,
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $order = Order::query()->firstOrFail();
+        $item = $order->items->firstOrFail();
+
+        $this->assertArrayNotHasKey('tindakan', $item->specification ?? []);
+    }
+
+    #[Test]
+    public function it_keeps_the_discount_calculated_after_subtotal_in_the_order_total(): void
+    {
+        $admin = User::factory()->forRole(UserRole::Admin)->create();
+        $customer = $this->activeCustomer($admin);
+
+        $response = $this->actingAs($admin)->post(route('orders.store'), [
+            'customer_id' => $customer->id,
+            'discount' => 50000,
+            'delivery_fee' => 30000,
+            'items' => [
+                [
+                    'title' => 'Kartu Nama',
+                    'category' => ItemCategory::Printing->value,
+                    'qty' => 2,
+                    'unit' => 'pcs',
+                    'unit_price' => 100000,
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $order = Order::query()->firstOrFail();
+
+        $this->assertSame('200000.00', (string) $order->subtotal);
+        $this->assertSame('50000.00', (string) $order->discount);
+        $this->assertSame('30000.00', (string) $order->delivery_fee);
+        $this->assertSame('180000.00', (string) $order->total);
+    }
+
+    #[Test]
+    public function it_creates_a_minimal_order_with_a_single_item_using_the_previous_flow(): void
+    {
+        $admin = User::factory()->forRole(UserRole::Admin)->create();
+        $customer = $this->activeCustomer($admin);
+
+        $response = $this->actingAs($admin)->post(route('orders.store'), [
+            'customer_id' => $customer->id,
+            'items' => [
+                [
+                    'title' => 'Item Satu',
+                    'category' => ItemCategory::Printing->value,
+                    'qty' => 1,
+                    'unit' => 'pcs',
+                    'unit_price' => 10000,
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $order = Order::query()->firstOrFail();
+        $item = $order->items->firstOrFail();
+
+        $this->assertSame(1, $order->items()->count());
+        $this->assertSame('10000.00', (string) $item->total);
+        $this->assertNull($item->specification);
+    }
 }
