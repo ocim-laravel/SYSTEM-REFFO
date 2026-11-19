@@ -11,7 +11,7 @@
 Status: **BERJALAN** *(fase aktif ditetapkan awal sesi; gate PH-01 disetujui Owner 19 November 2026 — lihat arsip PH-01; ADR-004: status awal order tergantung pembuatnya; ADR-005: perilaku pembatalan; ADR-006: dompdf untuk PDF ringkasan)*
 Estimasi: Minggu 9–12
 Modul: MOD-02 (Admin & Order)
-Sesi ini: **AC-02-8 — PDF ringkasan order** (`barryvdh/laravel-dompdf` via ADR-006, view PDF, route/controller, tombol detail, feature test). AC-02-7 masih tertunda (MOD-03, BR-05).
+Sesi ini: **AC-02-7 — guard item ACC (BR-05)**, dilanjutkan menyiapkan **data demo gate PH-02** (1 pelanggan + 1 order 4 item). AC-02-8 (PDF) selesai di sesi sebelumnya.
 
 ### Ruang lingkup PH-02 (HANYA ini)
 - [x] **AC-02-1** Order dengan 3 item menghitung total benar, termasuk diskon *(`OrderService::create()`: subtotal `Σ qty × unit_price`, dikurangi diskon, ditambah `delivery_fee` sekali per order BR-14; `tax` tidak masuk rumus; feature test)*
@@ -20,7 +20,7 @@ Sesi ini: **AC-02-8 — PDF ringkasan order** (`barryvdh/laravel-dompdf` via ADR
 - [x] **AC-02-3** Draft buatan Designer berstatus `pending_validation`; Designer tidak bisa memvalidasi (403) (BR-03) *(policy + route + feature test; ADR-004: Admin/Owner → `draft`)*
 - [x] **AC-02-4** Setelah `validated`, item masuk `queued_design` *(state machine `OrderService::validate()` + `item_status_histories`; feature test)*
 - [x] **AC-02-5** Pembatalan menyimpan alasan, biaya aktual, dan nilai kesepakatan terpisah (BR-15) *(`OrderService::cancel()` + `POST /orders/{order}/cancel`, form, audit `order.cancelled` before/after BR-17; feature test)*
-- [ ] AC-02-7 Item yang sudah `acc` tidak bisa diubah tanpa Change Request (BR-05, MOD-03)
+- [x] **AC-02-7** Item yang sudah `acc` tidak bisa diubah tanpa Change Request (BR-05) *(`OrderService::assertItemMutable()` → `ValidationException` key `item`; dipanggil di `updateItemPrice()`, `deleteItem()`, `changeItemStatus()` kecuali status sama; bypass CR disusul MOD-03; feature test)*
 - [x] **AC-02-8** PDF ringkasan order memuat pelanggan, item, total, deadline *(ADR-006: `barryvdh/laravel-dompdf`, Blade view PDF, `OrderController::exportPdf()`, route `orders.pdf`, tombol di detail, otorisasi `orders.view`; feature test)*
 
 ### JANGAN DISENTUH di PH-02
@@ -29,9 +29,9 @@ Sesi ini: **AC-02-8 — PDF ringkasan order** (`barryvdh/laravel-dompdf` via ADR
 - Dashboard, laporan, dan fitur realtime per divisi
 
 ### Kriteria selesai PH-02 (gate)
-- [ ] AC-02-1 … AC-02-8 lulus (lihat `docs/plan/modules/MOD-02-order.md`) — AC-02-1 s.d. AC-02-6 dan AC-02-8 lulus; **AC-02-7 tertunda** (MOD-03/BR-05)
+- [x] AC-02-1 … AC-02-8 lulus (lihat `docs/plan/modules/MOD-02-order.md`) — AC-02-1 s.d. AC-02-8 lulus (AC-02-7 = guard ACC tanpa bypass; bypass Change Request menyusul di MOD-03)
 - [ ] Demo 1 order 4 item (campur printing & reklame) sampai antrean desain
-- [x] `php artisan test` hijau & `pint` bersih *(193 test / 830 assertion pada sesi ini)*
+- [x] `php artisan test` hijau & `pint` bersih *(199 test / 854 assertion setelah AC-02-7)*
 
 ---
 
@@ -94,7 +94,7 @@ Sesi ini: **AC-02-8 — PDF ringkasan order** (`barryvdh/laravel-dompdf` via ADR
 |---|---|---|---|
 | PH-00 | Fondasi Sistem | MOD-10 | Selesai (gate disetujui Owner 2026-11-19) |
 | PH-01 | Pelanggan (CRM) | MOD-01 | Selesai (gate disetujui Owner 2026-11-19; AC-01-1…AC-01-6) |
-| PH-02 | Admin & Order | MOD-02 | **AKTIF** (AC-02-1, AC-02-2, AC-02-3, AC-02-4, AC-02-5, AC-02-6 domain, AC-02-8 PDF; controller/route/view order) |
+| PH-02 | Admin & Order | MOD-02 | **AKTIF** (AC-02-1 … AC-02-8 termasuk guard ACC AC-02-7; controller/route/view order; data demo gate disiapkan) |
 | PH-03 | Designer | MOD-03 | Menunggu |
 | PH-04 | Operator / Printing | MOD-04 | Menunggu |
 | PH-05 | Finishing / QC / Packing | MOD-05 | Menunggu |
@@ -133,3 +133,4 @@ Sesi ini: **AC-02-8 — PDF ringkasan order** (`barryvdh/laravel-dompdf` via ADR
 | 2026-11-19 | PH-02 (MOD-02) | AC-02-5 — pembatalan order (BR-15, BR-17) | `app/Services/Order/OrderService.php`, `app/Policies/OrderPolicy.php`, `app/Http/Requests/Order/CancelOrderRequest.php` (baru), `app/Http/Controllers/Order/OrderController.php`, `routes/web.php`, `resources/views/orders/{cancel.blade.php (baru),show.blade.php}`, `tests/Feature/Order/OrderCancellationTest.php` (baru), `PROGRESS.md` | `OrderService::cancel()` menyimpan `order_cancellations` (alasan wajib, `actual_cost` & `settlement_amount` terpisah, `settlement_note`, `decided_by/at`), mengubah order + semua item → `cancelled` dengan riwayat status, serta audit `order.cancelled` before/after + reason (BR-17). Otorisasi `cancel` via `OrderPolicy` → `orders.manage` (Admin, Owner; Designer 403). Route `GET|POST /orders/{order}/cancel` + form dengan validasi Form Request (alasan min 5 karakter, nominal ≥ 0). Detail order menampilkan ringkasan pembatalan; tombol Validasi kini juga muncul untuk order `draft` (konsisten ADR-004). Bookkeeping: checkbox AC-02-3/02-4 dicentang karena sudah terimplementasi & terverifikasi. `php artisan test` hijau (190/190, 821 assertion — 9 test baru), `pint --dirty` bersih. Migration, `docs/plan/**`, dan MOD-03 dst tidak disentuh. Belum di-commit. |
 | 2026-11-19 | PH-02 (MOD-02) | ADR-005 — perilaku pembatalan order disetujui Owner | `docs/plan/07-decisions/ADR-005-cancellation.md` (baru), `PROGRESS.md` | Lima keputusan ditetapkan & disetujui Owner: (1) item ikut dibatalkan saat order dibatalkan; (2) tombol Validasi muncul untuk `draft` & `pending_validation`; (3) alasan pembatalan minimal 5 karakter; (4) pembatalan order `completed`/`delivering` dibiarkan sekarang; (5) filter tanggal daftar order memakai `created_at`. Hanya menambah file ADR + memperbarui `PROGRESS.md`; kode, migration, dan `docs/plan/**` lain tidak disentuh. |
 | 2026-11-19 | PH-02 (MOD-02) | ADR-006 (disetujui Owner) + AC-02-8 (PDF ringkasan order) | `docs/plan/07-decisions/ADR-006-dompdf.md` (baru), `composer.json`, `composer.lock`, `app/Http/Controllers/Order/OrderController.php`, `routes/web.php`, `resources/views/orders/pdf.blade.php`, `resources/views/orders/show.blade.php`, `tests/Feature/Order/OrderPdfTest.php`, `PROGRESS.md` | USULAN paket `barryvdh/laravel-dompdf` disetujui Owner → ADR-006 dibuat (hanya file baru di `docs/plan/07-decisions/`), `composer require` hanya paket ini (+ dependency transitive). `exportPdf()` otorisasi `orders.view`, unduh `{$code}.pdf`; tombol "Unduh Ringkasan (PDF)" di detail. PDF memuat pelanggan (kode/nama/tipe/telepon/alamat), item, subtotal/diskon/biaya kirim/total/status/deadline/catatan. Feature test: 200, `application/pdf`, nama file kode order, konten memuat nama pelanggan & total; 403 tanpa izin. `php artisan test` hijau (193/830), `pint --dirty` bersih. MOD-03 dst & migration tidak disentuh. |
+| 2026-11-19 | PH-02 (MOD-02) | AC-02-7 — guard item ACC (BR-05) | `app/Services/Order/OrderService.php`, `tests/Feature/Order/AccItemGuardTest.php` (baru), `PROGRESS.md` | `assertItemMutable()` melempar `ValidationException` (key `item`) bila `$item->status === ItemStatus::Acc`; dipanggil di awal `updateItemPrice()`/`deleteItem()` dan di `changeItemStatus()` setelah early-return status sama. Komentar singkat di guard: bypass via Change Request disusul MOD-03 (belum diimplementasikan). 6 feature test: harga/hapus/status ditolak, regresi item `draft` & `queued_design` tetap lolos, no-op ACC diizinkan, integritas #7 (0 riwayat status tertulis pada percobaan gagal). `php artisan test` hijau (199/854), `pint --dirty` bersih. Migration, `docs/plan/**`, MOD-03 dst tidak disentuh. |

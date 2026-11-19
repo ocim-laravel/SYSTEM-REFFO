@@ -28,6 +28,7 @@ use Illuminate\Validation\ValidationException;
  *   rumus (MOD-02 "Aturan penerapan"), biaya kirim sekali per order (BR-14).
  * - Status item diubah hanya lewat changeItemStatus() agar tiap perubahan
  *   menulis item_status_histories (integritas #7).
+ * - Item yang sudah ACC dikunci dari mutasi tanpa Change Request (AC-02-7, BR-05).
  */
 class OrderService
 {
@@ -168,6 +169,8 @@ class OrderService
             return $item;
         }
 
+        $this->assertItemMutable($item);
+
         if ($status === ItemStatus::QueuedDesign) {
             $item->loadMissing('order');
             if ($item->order->status !== OrderStatus::Validated) {
@@ -205,6 +208,7 @@ class OrderService
         User $actor,
         array $meta = [],
     ): OrderItem {
+        $this->assertItemMutable($item);
         $order = $item->order;
         $this->assertOrderIsEditable($order);
         $before = $this->itemSnapshot($item);
@@ -240,6 +244,7 @@ class OrderService
      */
     public function deleteItem(OrderItem $item, User $actor, array $meta = []): void
     {
+        $this->assertItemMutable($item);
         $order = $item->order;
         $this->assertOrderIsEditable($order);
         $before = $this->itemSnapshot($item);
@@ -409,6 +414,22 @@ class OrderService
 
             return $order;
         });
+    }
+
+    /**
+     * Item yang sudah ACC tidak boleh diubah tanpa Change Request yang disetujui
+     * (AC-02-7, BR-05). Perubahan ke status yang sama bukan mutasi, jadi diizinkan.
+     *
+     * Catatan untuk MOD-03: CR yang disetujui akan mem-bypass guard ini lewat
+     * metode terpisah — jangan menambahkan jalur bypass di sini sekarang.
+     */
+    private function assertItemMutable(OrderItem $item): void
+    {
+        if ($item->status === ItemStatus::Acc) {
+            throw ValidationException::withMessages([
+                'item' => 'Item yang sudah ACC tidak dapat diubah tanpa Change Request.',
+            ]);
+        }
     }
 
     private function assertOrderIsEditable(Order $order): void
