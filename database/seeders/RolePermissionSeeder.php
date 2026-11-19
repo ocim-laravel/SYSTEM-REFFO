@@ -34,6 +34,9 @@ class RolePermissionSeeder extends Seeder
         'customers.view',
         'customers.manage',
         'customers.delete',
+        'orders.view',
+        'orders.validate',
+        'orders.manage',
         'divisions.view',
         'divisions.manage',
         'users.view',
@@ -46,23 +49,54 @@ class RolePermissionSeeder extends Seeder
     ];
 
     /**
-     * Pemetaan role ke permission (mengacu struktur menu 04-architecture §4.6).
+     * Pemetaan role ke permission (mengacu struktur menu 04-architecture, MOD-02).
      *
      * @var array<string, list<string>>
      */
     public const ROLE_PERMISSIONS = [
-        'owner' => self::PERMISSIONS,
+        'owner' => [
+            'menu.dashboard',
+            'menu.customer',
+            'menu.order',
+            'menu.design',
+            'menu.production',
+            'menu.finishing',
+            'menu.delivery',
+            'menu.finance',
+            'menu.hrd',
+            'menu.material',
+            'menu.reports',
+            'menu.system',
+            'customers.view',
+            'customers.manage',
+            'customers.delete',
+            'orders.view',
+            'orders.manage',
+            'divisions.view',
+            'divisions.manage',
+            'users.view',
+            'users.manage',
+            'calendars.view',
+            'calendars.manage',
+            'system.override',
+            'settings.view',
+            'settings.manage',
+        ],
         'admin' => [
             'menu.dashboard',
             'menu.customer',
             'menu.order',
             'customers.view',
             'customers.manage',
+            'orders.view',
+            'orders.validate',
+            'orders.manage',
         ],
         'designer' => [
             'menu.dashboard',
             'menu.order',
             'menu.design',
+            'orders.view',
         ],
         'production' => [
             'menu.dashboard',

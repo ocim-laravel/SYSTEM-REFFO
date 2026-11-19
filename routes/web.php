@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Customer\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Operator\DashboardController as OperatorDashboardController;
+use App\Http\Controllers\Order\OrderController;
 use App\Http\Controllers\System\DivisionController;
 use App\Http\Controllers\System\NotificationController;
 use App\Http\Controllers\System\OverrideController;
@@ -40,6 +41,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::resource('customers', CustomerController::class);
+
+    Route::resource('orders', OrderController::class)->only(['index', 'create', 'store', 'show']);
+    Route::post('/orders/{order}/validate', [OrderController::class, 'validate'])->name('orders.validate');
 
     Route::get('/password/change', [PasswordChangeController::class, 'edit'])->name('password.change');
     Route::put('/password/change', [PasswordChangeController::class, 'update'])->name('password.change.update');

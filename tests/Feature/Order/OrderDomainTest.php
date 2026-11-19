@@ -91,6 +91,7 @@ class OrderDomainTest extends TestCase
 
         $this->assertSame(3, $order->items()->count());
         $this->assertSame(sprintf('ORD-%d-0001', now()->year), $order->code);
+        $this->assertSame(OrderStatus::PendingValidation, $order->status);
         $this->assertSame('600000.00', (string) $order->subtotal);
         $this->assertSame('50000.00', (string) $order->discount);
         $this->assertSame('25000.00', (string) $order->delivery_fee);
@@ -116,21 +117,21 @@ class OrderDomainTest extends TestCase
 
         app(OrderService::class)->changeItemStatus(
             $itemA,
-            ItemStatus::QueuedDesign,
+            ItemStatus::Designing,
             $admin,
-            'Diserahkan ke desain',
+            'Mulai dikerjakan desainer',
         );
 
-        $this->assertSame(ItemStatus::QueuedDesign, $itemA->fresh()->status);
+        $this->assertSame(ItemStatus::Designing, $itemA->fresh()->status);
         $this->assertSame(ItemStatus::Draft, $itemB->fresh()->status);
         $this->assertSame(1, $itemA->statusHistories()->count());
         $this->assertSame(0, $itemB->statusHistories()->count());
         $this->assertDatabaseHas('item_status_histories', [
             'order_item_id' => $itemA->id,
             'from_status' => ItemStatus::Draft->value,
-            'to_status' => ItemStatus::QueuedDesign->value,
+            'to_status' => ItemStatus::Designing->value,
             'changed_by' => $admin->id,
-            'note' => 'Diserahkan ke desain',
+            'note' => 'Mulai dikerjakan desainer',
         ]);
     }
 

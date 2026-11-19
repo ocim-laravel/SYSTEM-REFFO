@@ -66,7 +66,8 @@ class OrderService
                 'code' => $this->numbers->nextOrder(),
                 'customer_id' => $customer->id,
                 'created_by' => $actor->id,
-                'status' => OrderStatus::Draft,
+                // Draft buatan Designer berstatus pending_validation (AC-02-3, BR-03).
+                'status' => OrderStatus::PendingValidation,
                 'priority' => $this->priority($data['priority'] ?? null),
                 'deadline_at' => $data['deadline_at'] ?? null,
                 'subtotal' => $subtotal,
@@ -108,14 +109,14 @@ class OrderService
     }
 
     /**
-     * Tambah item hanya saat order masih draft (MOD-02 "Aturan penerapan").
+     * Tambah item hanya sebelum order divalidasi (MOD-02 "Aturan penerapan").
      *
      * @param  array{title: string, category?: ItemCategory|string|null, specification?: array|null, qty?: int|float|string, unit?: string|null, unit_price?: int|float|string, deadline_at?: mixed, priority?: Priority|string|null}  $data
      * @param  array{ip?: string|null, user_agent?: string|null}  $meta
      */
     public function addItem(Order $order, array $data, User $actor, array $meta = []): OrderItem
     {
-        $this->assertOrderIsDraft($order);
+        $this->assertOrderIsEditable($order);
 
         return DB::transaction(function () use ($order, $data, $actor, $meta): OrderItem {
             $seq = (int) $order->items()->max('seq') + 1;
@@ -153,6 +154,7 @@ class OrderService
     /**
      * Satu-satunya jalur perubahan status item: selalu tulis riwayat (integritas #7).
      * Perubahan item A tidak menyentuh item B (BR-02).
+     * Item tidak boleh masuk antrean desain bila order belum tervalidasi (integritas #2).
      */
     public function changeItemStatus(
         OrderItem $item,
@@ -162,6 +164,15 @@ class OrderService
     ): OrderItem {
         if ($item->status === $status) {
             return $item;
+        }
+
+        if ($status === ItemStatus::QueuedDesign) {
+            $item->loadMissing('order');
+            if ($item->order->status !== OrderStatus::Validated) {
+                throw ValidationException::withMessages([
+                    'status' => 'Item tidak dapat masuk antrean desain sebelum order divalidasi.',
+                ]);
+            }
         }
 
         $from = $item->status;
@@ -193,7 +204,7 @@ class OrderService
         array $meta = [],
     ): OrderItem {
         $order = $item->order;
-        $this->assertOrderIsDraft($order);
+        $this->assertOrderIsEditable($order);
         $before = $this->itemSnapshot($item);
 
         DB::transaction(function () use ($item, $order, $unitPrice, $actor, $meta, $before): void {
@@ -221,14 +232,14 @@ class OrderService
     }
 
     /**
-     * Hapus item — hanya saat order draft (integritas #1).
+     * Hapus item — hanya sebelum order divalidasi (integritas #1).
      *
      * @param  array{ip?: string|null, user_agent?: string|null}  $meta
      */
     public function deleteItem(OrderItem $item, User $actor, array $meta = []): void
     {
         $order = $item->order;
-        $this->assertOrderIsDraft($order);
+        $this->assertOrderIsEditable($order);
         $before = $this->itemSnapshot($item);
 
         DB::transaction(function () use ($item, $order, $actor, $meta, $before): void {
@@ -266,11 +277,66 @@ class OrderService
         return $order->refresh();
     }
 
-    private function assertOrderIsDraft(Order $order): void
+    /**
+     * Validasi order oleh Admin: order tervalidasi dan semua item masuk antrean desain
+     * (AC-02-4, BR-03, integritas #2).
+     *
+     * @param  array{ip?: string|null, user_agent?: string|null}  $meta
+     */
+    public function validate(Order $order, User $actor, array $meta = []): Order
     {
-        if ($order->status !== OrderStatus::Draft) {
+        if ($order->status !== OrderStatus::PendingValidation) {
             throw ValidationException::withMessages([
-                'order' => 'Item hanya dapat diubah saat order berstatus draft.',
+                'order' => 'Hanya order yang menunggu validasi yang dapat divalidasi.',
+            ]);
+        }
+
+        $before = $this->orderSnapshot($order);
+
+        return DB::transaction(function () use ($order, $actor, $meta, $before): Order {
+            $order->update([
+                'status' => OrderStatus::Validated,
+                'validated_by' => $actor->id,
+                'validated_at' => now(),
+            ]);
+
+            foreach ($order->items()->get() as $item) {
+                if ($item->status !== ItemStatus::QueuedDesign) {
+                    $from = $item->status;
+                    $item->update(['status' => ItemStatus::QueuedDesign]);
+
+                    ItemStatusHistory::create([
+                        'order_item_id' => $item->id,
+                        'from_status' => $from?->value,
+                        'to_status' => ItemStatus::QueuedDesign->value,
+                        'changed_by' => $actor->id,
+                        'note' => 'Order divalidasi, masuk antrean desain.',
+                    ]);
+                }
+            }
+
+            $order->refresh()->load('items');
+
+            $this->audit->record(
+                action: 'order.validated',
+                actor: $actor,
+                modelType: Order::class,
+                modelId: $order->id,
+                before: $before,
+                after: $this->orderSnapshot($order),
+                ip: $meta['ip'] ?? null,
+                userAgent: $meta['user_agent'] ?? null,
+            );
+
+            return $order;
+        });
+    }
+
+    private function assertOrderIsEditable(Order $order): void
+    {
+        if (! in_array($order->status, [OrderStatus::Draft, OrderStatus::PendingValidation], true)) {
+            throw ValidationException::withMessages([
+                'order' => 'Item hanya dapat diubah saat order belum divalidasi.',
             ]);
         }
     }

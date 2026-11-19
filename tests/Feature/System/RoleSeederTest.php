@@ -26,16 +26,17 @@ class RoleSeederTest extends TestCase
     }
 
     #[Test]
-    public function owner_role_receives_every_permission(): void
+    public function owner_role_receives_every_permission_except_order_validation(): void
     {
         $this->seed(RolePermissionSeeder::class);
 
         $owner = Role::findByName('owner', 'web');
 
         $this->assertEqualsCanonicalizing(
-            RolePermissionSeeder::PERMISSIONS,
+            RolePermissionSeeder::ROLE_PERMISSIONS['owner'],
             $owner->permissions->pluck('name')->all(),
         );
+        $this->assertFalse($owner->hasPermissionTo('orders.validate'));
     }
 
     #[Test]
