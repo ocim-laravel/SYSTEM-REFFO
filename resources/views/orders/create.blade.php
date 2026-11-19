@@ -2,7 +2,7 @@
 
 @section('content')
     <h1 style="margin-top:0">Buat Order</h1>
-    <p class="muted">Order baru akan berstatus <strong>Menunggu Validasi</strong> (AC-02-3, BR-03).</p>
+    <p class="muted">Order buatan <strong>Designer</strong> langsung berstatus <strong>Menunggu Validasi</strong>; order buatan <strong>Admin</strong> berstatus <strong>Draft</strong> (AC-02-3, BR-03, ADR-004).</p>
 
     @if ($errors->any())
         <div class="alert error" style="margin-bottom:12px">

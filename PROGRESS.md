@@ -8,7 +8,7 @@
 ## FASE AKTIF
 
 **PH-02 — ADMIN & ORDER**
-Status: **BERJALAN** *(fase aktif ditetapkan awal sesi; gate PH-01 disetujui Owner 19 November 2026 — lihat arsip PH-01)*
+Status: **BERJALAN** *(fase aktif ditetapkan awal sesi; gate PH-01 disetujui Owner 19 November 2026 — lihat arsip PH-01; ADR-004: status awal order tergantung pembuatnya)*
 Estimasi: Minggu 9–12
 Modul: MOD-02 (Admin & Order)
 Sesi ini: **skema + domain saja** — belum controller, view, route, policy, atau menu.
@@ -121,3 +121,4 @@ Sesi ini: **skema + domain saja** — belum controller, view, route, policy, ata
 | 2026-11-19 | PH-01 (MOD-01) | Gate PH-01 disetujui Owner | `PROGRESS.md`, `docs/deployment-checklist.md` | Persetujuan gate dicatat setelah dry-run lulus: 10 pelanggan contoh didaftarkan (kode `CUS-2026-0002`…`CUS-2026-0011`; `CUS-2026-0001` "Damar Ahmad" sisa uji lama), pencarian nama/kode/telepon + filter tipe/status lulus, Finance 403 di create/edit/store, audit `customer.created`=11 & `customer.updated`=1. Data pelanggan **nyata** menyusul sebelum go-live (dicatat di `docs/deployment-checklist.md` bagian A). Tidak ada kode yang berubah. |
 | 2026-11-19 | PH-02 (MOD-02) | Commit skema + domain sesi 1 | `git` (`1bdf4bf`, `9a47d84`) | Pekerjaan sesi 1 di-commit sebagai `feat(MOD-02): skema & domain order…[BR-02][BR-14][BR-17]` + `chore(tooling): model default big-pickle`, lalu di-push ke `origin/main`. Audit ulang: `php artisan test` 170/170 (693 assertion), `pint` bersih, kolom migration & nilai enum identik `05-data-model.md`. |
 | 2026-11-19 | PH-02 (MOD-02) | ADR-003 — keputusan implementasi order disetujui Owner | `docs/plan/07-decisions/ADR-003-order-implementation.md` (baru), `PROGRESS.md` | Tiga keputusan ditetapkan & disetujui Owner: (1) `orders.customer_id` RESTRICT — pelanggan ber-order tak bisa dihapus permanen; (2) `order_items.qty` `decimal(15,2)`; (3) `orders.tax` `default 0` dan di luar rumus total. Hanya menambah file ADR + memperbarui `PROGRESS.md`; kode, migration, dan `docs/plan/**` lain tidak disentuh. |
+| 2026-11-19 | PH-02 (MOD-02) | ADR-004 — status awal order tergantung pembuat (pilih b) + AC-02-3/AC-02-4 | `docs/plan/07-decisions/ADR-004-order-initial-status.md` (baru), `app/Services/Order/OrderService.php`, `resources/views/orders/create.blade.php`, `tests/Feature/Order/{OrderDomainTest,OrderAccessAndStateTest}.php`, `PROGRESS.md` | `OrderService::create()` kini: Admin/Owner → `draft`, Designer → `pending_validation` (AC-02-3, BR-03). `validate()` menerima `draft` & `pending_validation`. `initialStatus()` baru. Test diperbarui: 181/181 hijau (770 assertion), `pint --dirty` bersih. Tidak ada migration, controller, view (kecuali satu baris hint), atau `docs/plan/**` lain yang disentuh. |

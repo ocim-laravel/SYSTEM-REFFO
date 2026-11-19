@@ -91,7 +91,7 @@ class OrderDomainTest extends TestCase
 
         $this->assertSame(3, $order->items()->count());
         $this->assertSame(sprintf('ORD-%d-0001', now()->year), $order->code);
-        $this->assertSame(OrderStatus::PendingValidation, $order->status);
+        $this->assertSame(OrderStatus::Draft, $order->status);
         $this->assertSame('600000.00', (string) $order->subtotal);
         $this->assertSame('50000.00', (string) $order->discount);
         $this->assertSame('25000.00', (string) $order->delivery_fee);
@@ -103,6 +103,19 @@ class OrderDomainTest extends TestCase
                 ->map(fn (OrderItem $item): string => (string) $item->total)->all(),
         );
         $this->assertFalse(Schema::hasColumn('order_items', 'delivery_fee'));
+    }
+
+    #[Test]
+    public function it_sets_the_initial_status_by_creator_role(): void
+    {
+        $admin = User::factory()->forRole(UserRole::Admin)->create();
+        $designer = User::factory()->forRole(UserRole::Designer)->create();
+
+        $byAdmin = app(OrderService::class)->create($this->threeItemData($this->customer($admin)), $admin);
+        $byDesigner = app(OrderService::class)->create($this->threeItemData($this->customer($designer)), $designer);
+
+        $this->assertSame(OrderStatus::Draft, $byAdmin->status);
+        $this->assertSame(OrderStatus::PendingValidation, $byDesigner->status);
     }
 
     #[Test]

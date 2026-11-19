@@ -62,11 +62,24 @@ class OrderAccessAndStateTest extends TestCase
         ];
     }
 
-    private function createPendingOrder(User $creator): Order
+    private function createPendingOrder(): Order
     {
-        $customer = $this->activeCustomer($creator);
+        $designer = User::factory()->forRole(UserRole::Designer)->create();
 
-        return app(OrderService::class)->create($this->validPayload($customer, 2), $creator);
+        return app(OrderService::class)->create(
+            $this->validPayload($this->activeCustomer($designer), 2),
+            $designer,
+        );
+    }
+
+    private function createDraftOrder(): Order
+    {
+        $admin = User::factory()->forRole(UserRole::Admin)->create();
+
+        return app(OrderService::class)->create(
+            $this->validPayload($this->activeCustomer($admin), 2),
+            $admin,
+        );
     }
 
     #[Test]
@@ -89,11 +102,45 @@ class OrderAccessAndStateTest extends TestCase
     }
 
     #[Test]
+    public function it_creates_a_draft_order_when_admin_creates_an_order(): void
+    {
+        $admin = User::factory()->forRole(UserRole::Admin)->create();
+        $customer = $this->activeCustomer($admin);
+
+        $response = $this->actingAs($admin)->post(route('orders.store'), $this->validPayload($customer, 2));
+
+        $order = Order::query()->firstOrFail();
+
+        $response->assertRedirect(route('orders.show', $order));
+        $this->assertSame(OrderStatus::Draft, $order->status);
+        $this->assertSame($admin->id, $order->created_by);
+        $this->assertNull($order->validated_by);
+        $this->assertTrue($order->items->every(fn ($item) => $item->status === ItemStatus::Draft));
+    }
+
+    #[Test]
+    public function it_validates_a_draft_order_created_by_admin(): void
+    {
+        $admin = User::factory()->forRole(UserRole::Admin)->create();
+        $order = $this->createDraftOrder();
+
+        $this->assertSame(OrderStatus::Draft, $order->status);
+
+        $response = $this->actingAs($admin)->post(route('orders.validate', $order));
+
+        $response->assertRedirect(route('orders.show', $order));
+        $order->refresh()->load('items');
+        $this->assertSame(OrderStatus::Validated, $order->status);
+        $this->assertSame($admin->id, $order->validated_by);
+        $this->assertTrue($order->items->every(fn ($item) => $item->status === ItemStatus::QueuedDesign));
+    }
+
+    #[Test]
     public function it_forbids_order_validation_when_actor_is_designer(): void
     {
         $admin = User::factory()->forRole(UserRole::Admin)->create();
         $designer = User::factory()->forRole(UserRole::Designer)->create();
-        $order = $this->createPendingOrder($admin);
+        $order = $this->createPendingOrder();
 
         $response = $this->actingAs($designer)->post(route('orders.validate', $order));
 
@@ -136,7 +183,7 @@ class OrderAccessAndStateTest extends TestCase
     {
         $admin = User::factory()->forRole(UserRole::Admin)->create();
         $owner = User::factory()->forRole(UserRole::Owner)->create();
-        $order = $this->createPendingOrder($admin);
+        $order = $this->createPendingOrder();
 
         $response = $this->actingAs($owner)->post(route('orders.validate', $order));
 
@@ -163,7 +210,7 @@ class OrderAccessAndStateTest extends TestCase
     public function it_allows_index_create_store_and_show_for_admin_owner_and_designer(): void
     {
         $admin = User::factory()->forRole(UserRole::Admin)->create();
-        $order = $this->createPendingOrder($admin);
+        $order = $this->createPendingOrder();
 
         foreach ([UserRole::Admin, UserRole::Owner, UserRole::Designer] as $role) {
             $user = $role === UserRole::Admin
@@ -187,7 +234,7 @@ class OrderAccessAndStateTest extends TestCase
     public function it_forbids_order_routes_for_roles_without_orders_view_permission(): void
     {
         $admin = User::factory()->forRole(UserRole::Admin)->create();
-        $order = $this->createPendingOrder($admin);
+        $order = $this->createPendingOrder();
 
         foreach ([UserRole::Finance, UserRole::Hrd, UserRole::Production, UserRole::Field] as $role) {
             $user = User::factory()->forRole($role)->create();
@@ -210,7 +257,10 @@ class OrderAccessAndStateTest extends TestCase
             'is_active' => true,
         ], $admin);
 
-        $order1 = app(OrderService::class)->create($this->validPayload($c1, 1), $admin); // pending_validation
+        $order1 = app(OrderService::class)->create(
+            $this->validPayload($c1, 1),
+            User::factory()->forRole(UserRole::Designer)->create(),
+        ); // pending_validation
         $order2 = app(OrderService::class)->create($this->validPayload($c2, 1), $admin);
         app(OrderService::class)->validate($order2, $admin); // validated
 

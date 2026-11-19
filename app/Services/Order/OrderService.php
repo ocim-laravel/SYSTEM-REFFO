@@ -6,6 +6,7 @@ use App\Enums\ItemCategory;
 use App\Enums\ItemStatus;
 use App\Enums\OrderStatus;
 use App\Enums\Priority;
+use App\Enums\UserRole;
 use App\Models\Customer;
 use App\Models\ItemStatusHistory;
 use App\Models\Order;
@@ -66,8 +67,8 @@ class OrderService
                 'code' => $this->numbers->nextOrder(),
                 'customer_id' => $customer->id,
                 'created_by' => $actor->id,
-                // Draft buatan Designer berstatus pending_validation (AC-02-3, BR-03).
-                'status' => OrderStatus::PendingValidation,
+                // Draft buatan Designer langsung menunggu validasi Admin (AC-02-3, BR-03).
+                'status' => $this->initialStatus($actor),
                 'priority' => $this->priority($data['priority'] ?? null),
                 'deadline_at' => $data['deadline_at'] ?? null,
                 'subtotal' => $subtotal,
@@ -285,9 +286,9 @@ class OrderService
      */
     public function validate(Order $order, User $actor, array $meta = []): Order
     {
-        if ($order->status !== OrderStatus::PendingValidation) {
+        if (! in_array($order->status, [OrderStatus::Draft, OrderStatus::PendingValidation], true)) {
             throw ValidationException::withMessages([
-                'order' => 'Hanya order yang menunggu validasi yang dapat divalidasi.',
+                'order' => 'Hanya order yang belum divalidasi yang dapat divalidasi.',
             ]);
         }
 
@@ -339,6 +340,18 @@ class OrderService
                 'order' => 'Item hanya dapat diubah saat order belum divalidasi.',
             ]);
         }
+    }
+
+    /**
+     * Status awal order mengikuti pembuatnya (AC-02-3, BR-03, ADR-004):
+     * - Designer membuat draft → langsung `pending_validation` (harus divalidasi Admin);
+     * - Admin/Owner membuat → `draft` (masih boleh diselesaikan/divalidasi Admin).
+     */
+    private function initialStatus(User $actor): OrderStatus
+    {
+        return $actor->hasRole(UserRole::Designer->value)
+            ? OrderStatus::PendingValidation
+            : OrderStatus::Draft;
     }
 
     private function itemTotal(array $item): string
