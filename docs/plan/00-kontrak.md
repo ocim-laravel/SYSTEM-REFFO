@@ -159,3 +159,18 @@ app/
 3. **File diubah** — daftar path
 4. **Risiko / keputusan** yang butuh persetujuan
 5. **Saran langkah berikutnya** (tanpa mengerjakannya)
+
+---
+
+## 9. UI khusus pengembangan — JANGAN dihapus / diubah
+
+- Halaman login (`resources/views/auth/login.blade.php`) menampilkan **tabel akun demo**
+  (7 akun role, email, password, tombol Isi Form/Salin) yang dikontrol oleh
+  `DemoAccountService::isEnabled()` (hanya tampil di environment local/development/testing).
+- **DILARANG** menghapus tabel ini, menonaktifkan `DemoAccountService`, atau mengubah
+  `isEnabled()` agar tabel hilang di development.
+- Tabel ini adalah **alat bantu pengembangan** agar login & berpindah user mudah.
+  Kalau perlu perubahan tampilan, ajukan USULAN PERUBAHAN dulu.
+- Penyebab tabel "hilang" biasanya `APP_ENV=production` di `.env` — perbaiki `.env`,
+  bukan menghapus tabel.
+- Jangan ubah `.env` `APP_ENV` ke `production` di mesin pengembangan.
