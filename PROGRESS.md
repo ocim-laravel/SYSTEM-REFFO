@@ -8,7 +8,7 @@
 ## FASE AKTIF
 
 **PH-02 — ADMIN & ORDER**
-Status: **BERJALAN** *(fase aktif ditetapkan awal sesi; gate PH-01 disetujui Owner 19 November 2026 — lihat arsip PH-01; ADR-004: status awal order tergantung pembuatnya)*
+Status: **BERJALAN** *(fase aktif ditetapkan awal sesi; gate PH-01 disetujui Owner 19 November 2026 — lihat arsip PH-01; ADR-004: status awal order tergantung pembuatnya; ADR-005: perilaku pembatalan)*
 Estimasi: Minggu 9–12
 Modul: MOD-02 (Admin & Order)
 Sesi ini: **AC-02-5 — pembatalan order** (`OrderService::cancel()`, route/form, feature test). Controller, view, route, policy, dan menu order sudah dibuat pada sesi sebelumnya.
@@ -40,6 +40,15 @@ Sesi ini: **AC-02-5 — pembatalan order** (`OrderService::cancel()`, route/form
 - [x] Gate PH-01 **disetujui Owner, 19 November 2026** — dry-run 10 pelanggan + pencarian/filter + Finance 403 lulus (lihat log sesi)
 - [ ] Data pelanggan **nyata** belum dimasukkan — 10 pelanggan contoh masih ada di DB (`CUS-2026-0002` … `CUS-2026-0011`, plus `CUS-2026-0001` "Damar Ahmad" sisa uji lama). Dicatat di `docs/deployment-checklist.md` bagian A.
 - Catatan: `CustomerService::assertSelectableForOrder()` (AC-01-2) kini dipakai nyata oleh `OrderService::create()` — pelanggan nonaktif ditolak saat order dibuat.
+
+### Keputusan implementasi AC-02-5 — **disetujui Owner, 19 November 2026** (ADR-005)
+- Item ikut dibatalkan saat order dibatalkan (semua → `cancelled` + riwayat) — konsisten integritas #7.
+- Tombol Validasi muncul untuk `draft` dan `pending_validation` (ADR-004).
+- Alasan pembatalan minimal 5 karakter (konsisten dengan `DeleteCustomerRequest` & `OverrideRequest`).
+- Pembatalan order `completed`/`delivering` dibiarkan sekarang; batasan lebih ketat ditunda ke MOD-06/07.
+- Filter tanggal daftar order memakai `created_at` (bukan `deadline_at`).
+
+---
 
 ### Keputusan implementasi PH-02 — **disetujui Owner, 19 November 2026** (ADR-003)
 - `orders.customer_id` memakai `constrained()` (RESTRICT): pelanggan yang sudah punya order **tidak bisa dihapus permanen**. Diterima — melindungi riwayat order. Alternatif "lepas" hubungan = nonaktifkan pelanggan, bukan menghapus.
@@ -122,3 +131,4 @@ Sesi ini: **AC-02-5 — pembatalan order** (`OrderService::cancel()`, route/form
 | 2026-11-19 | PH-02 (MOD-02) | ADR-003 — keputusan implementasi order disetujui Owner | `docs/plan/07-decisions/ADR-003-order-implementation.md` (baru), `PROGRESS.md` | Tiga keputusan ditetapkan & disetujui Owner: (1) `orders.customer_id` RESTRICT — pelanggan ber-order tak bisa dihapus permanen; (2) `order_items.qty` `decimal(15,2)`; (3) `orders.tax` `default 0` dan di luar rumus total. Hanya menambah file ADR + memperbarui `PROGRESS.md`; kode, migration, dan `docs/plan/**` lain tidak disentuh. |
 | 2026-11-19 | PH-02 (MOD-02) | ADR-004 — status awal order tergantung pembuat (pilih b) + AC-02-3/AC-02-4 | `docs/plan/07-decisions/ADR-004-order-initial-status.md` (baru), `app/Services/Order/OrderService.php`, `resources/views/orders/create.blade.php`, `tests/Feature/Order/{OrderDomainTest,OrderAccessAndStateTest}.php`, `PROGRESS.md` | `OrderService::create()` kini: Admin/Owner → `draft`, Designer → `pending_validation` (AC-02-3, BR-03). `validate()` menerima `draft` & `pending_validation`. `initialStatus()` baru. Test diperbarui: 181/181 hijau (770 assertion), `pint --dirty` bersih. Tidak ada migration, controller, view (kecuali satu baris hint), atau `docs/plan/**` lain yang disentuh. |
 | 2026-11-19 | PH-02 (MOD-02) | AC-02-5 — pembatalan order (BR-15, BR-17) | `app/Services/Order/OrderService.php`, `app/Policies/OrderPolicy.php`, `app/Http/Requests/Order/CancelOrderRequest.php` (baru), `app/Http/Controllers/Order/OrderController.php`, `routes/web.php`, `resources/views/orders/{cancel.blade.php (baru),show.blade.php}`, `tests/Feature/Order/OrderCancellationTest.php` (baru), `PROGRESS.md` | `OrderService::cancel()` menyimpan `order_cancellations` (alasan wajib, `actual_cost` & `settlement_amount` terpisah, `settlement_note`, `decided_by/at`), mengubah order + semua item → `cancelled` dengan riwayat status, serta audit `order.cancelled` before/after + reason (BR-17). Otorisasi `cancel` via `OrderPolicy` → `orders.manage` (Admin, Owner; Designer 403). Route `GET|POST /orders/{order}/cancel` + form dengan validasi Form Request (alasan min 5 karakter, nominal ≥ 0). Detail order menampilkan ringkasan pembatalan; tombol Validasi kini juga muncul untuk order `draft` (konsisten ADR-004). Bookkeeping: checkbox AC-02-3/02-4 dicentang karena sudah terimplementasi & terverifikasi. `php artisan test` hijau (190/190, 821 assertion — 9 test baru), `pint --dirty` bersih. Migration, `docs/plan/**`, dan MOD-03 dst tidak disentuh. Belum di-commit. |
+| 2026-11-19 | PH-02 (MOD-02) | ADR-005 — perilaku pembatalan order disetujui Owner | `docs/plan/07-decisions/ADR-005-cancellation.md` (baru), `PROGRESS.md` | Lima keputusan ditetapkan & disetujui Owner: (1) item ikut dibatalkan saat order dibatalkan; (2) tombol Validasi muncul untuk `draft` & `pending_validation`; (3) alasan pembatalan minimal 5 karakter; (4) pembatalan order `completed`/`delivering` dibiarkan sekarang; (5) filter tanggal daftar order memakai `created_at`. Hanya menambah file ADR + memperbarui `PROGRESS.md`; kode, migration, dan `docs/plan/**` lain tidak disentuh. |
