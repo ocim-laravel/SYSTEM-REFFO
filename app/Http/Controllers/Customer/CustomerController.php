@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Customer\CustomerFilterRequest;
 use App\Http\Requests\Customer\CustomerRequest;
 use App\Http\Requests\Customer\DeleteCustomerRequest;
 use App\Models\Customer;
@@ -13,12 +14,13 @@ use Illuminate\View\View;
 
 class CustomerController extends Controller
 {
-    public function index(): View
+    public function index(CustomerFilterRequest $request, CustomerService $service): View
     {
         $this->authorize('viewAny', Customer::class);
 
         return view('customers.index', [
-            'customers' => Customer::query()->orderByDesc('id')->paginate(20),
+            'customers' => $service->search($request->validated()),
+            'filters' => $request->validated(),
         ]);
     }
 

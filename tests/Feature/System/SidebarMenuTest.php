@@ -75,12 +75,12 @@ class SidebarMenuTest extends TestCase
     }
 
     #[Test]
-    public function production_only_sees_production_finishing_and_material_menus(): void
+    public function production_only_sees_production_finishing_material_and_customer_menus(): void
     {
         $this->assertMenuFor(
             UserRole::Production,
-            ['dashboard', 'production', 'finishing', 'material'],
-            ['customer', 'design', 'delivery', 'finance', 'hrd', 'reports', 'divisions'],
+            ['dashboard', 'customer', 'production', 'finishing', 'material'],
+            ['order', 'design', 'delivery', 'finance', 'hrd', 'reports', 'divisions'],
         );
     }
 
@@ -95,12 +95,12 @@ class SidebarMenuTest extends TestCase
     }
 
     #[Test]
-    public function finance_only_sees_finance_menu(): void
+    public function finance_only_sees_finance_and_customer_menus(): void
     {
         $this->assertMenuFor(
             UserRole::Finance,
-            ['dashboard', 'finance'],
-            ['customer', 'order', 'design', 'production', 'hrd', 'delivery', 'divisions'],
+            ['dashboard', 'customer', 'finance'],
+            ['order', 'design', 'production', 'hrd', 'delivery', 'divisions'],
         );
     }
 

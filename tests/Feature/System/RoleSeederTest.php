@@ -51,15 +51,17 @@ class RoleSeederTest extends TestCase
     }
 
     #[Test]
-    public function finance_role_cannot_see_production_or_customer_menu_permissions(): void
+    public function finance_role_can_see_customer_menu_but_not_manage_or_production_permissions(): void
     {
         $this->seed(RolePermissionSeeder::class);
 
         $finance = Role::findByName('finance', 'web');
 
         $this->assertTrue($finance->hasPermissionTo('menu.finance'));
+        $this->assertTrue($finance->hasPermissionTo('menu.customer'));
+        $this->assertTrue($finance->hasPermissionTo('customers.view'));
+        $this->assertFalse($finance->hasPermissionTo('customers.manage'));
         $this->assertFalse($finance->hasPermissionTo('menu.production'));
-        $this->assertFalse($finance->hasPermissionTo('menu.customer'));
         $this->assertFalse($finance->hasPermissionTo('divisions.manage'));
     }
 }

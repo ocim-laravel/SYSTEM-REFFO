@@ -66,6 +66,7 @@ class RolePermissionSeeder extends Seeder
         ],
         'production' => [
             'menu.dashboard',
+            'menu.customer',
             'menu.production',
             'menu.finishing',
             'menu.material',
@@ -77,6 +78,7 @@ class RolePermissionSeeder extends Seeder
         ],
         'finance' => [
             'menu.dashboard',
+            'menu.customer',
             'menu.finance',
             'customers.view',
         ],

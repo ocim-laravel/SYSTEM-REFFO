@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\User;
 use App\Services\System\AuditLogService;
 use App\Services\System\NumberGeneratorService;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -20,6 +21,35 @@ class CustomerService
         private readonly NumberGeneratorService $numbers,
         private readonly AuditLogService $audit,
     ) {}
+
+    /**
+     * Pencarian & filter daftar pelanggan (AC-01-3, MOD-01).
+     *
+     * Filter yang didukung: nama, kode, telepon (pencocokan sebagian),
+     * tipe, dan status aktif/nonaktif.
+     *
+     * @param  array{name?: string|null, code?: string|null, phone?: string|null, type?: string|null, status?: string|null}  $filters
+     * @return LengthAwarePaginator<int, Customer>
+     */
+    public function search(array $filters = []): LengthAwarePaginator
+    {
+        $name = $filters['name'] ?? null;
+        $code = $filters['code'] ?? null;
+        $phone = $filters['phone'] ?? null;
+        $type = $filters['type'] ?? null;
+        $status = $filters['status'] ?? null;
+
+        return Customer::query()
+            ->when($name !== null && $name !== '', fn ($query) => $query->where('name', 'like', '%'.$name.'%'))
+            ->when($code !== null && $code !== '', fn ($query) => $query->where('code', 'like', '%'.$code.'%'))
+            ->when($phone !== null && $phone !== '', fn ($query) => $query->where('phone', 'like', '%'.$phone.'%'))
+            ->when($type !== null && $type !== '', fn ($query) => $query->where('type', $type))
+            ->when($status === 'active', fn ($query) => $query->where('is_active', true))
+            ->when($status === 'inactive', fn ($query) => $query->where('is_active', false))
+            ->orderByDesc('id')
+            ->paginate(20)
+            ->withQueryString();
+    }
 
     /**
      * @param  array{name: string, type: string, phone?: string|null, whatsapp?: string|null, email?: string|null, address?: string|null, notes?: string|null, is_active?: bool}  $data

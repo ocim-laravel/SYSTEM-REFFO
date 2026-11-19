@@ -108,6 +108,43 @@ class CustomerCrudTest extends TestCase
     }
 
     #[Test]
+    public function it_forbids_customer_update_when_actor_is_finance(): void
+    {
+        $admin = User::factory()->forRole(UserRole::Admin)->create();
+        $finance = User::factory()->forRole(UserRole::Finance)->create();
+        $customer = app(CustomerService::class)->create([
+            'name' => 'Nama Tetap',
+            'type' => CustomerType::Individual->value,
+        ], $admin);
+
+        $response = $this->actingAs($finance)->put(route('customers.update', $customer), [
+            'name' => 'Nama Diubah',
+            'type' => CustomerType::Company->value,
+        ]);
+
+        $response->assertForbidden();
+        $customer->refresh();
+        $this->assertSame('Nama Tetap', $customer->name);
+        $this->assertSame(CustomerType::Individual, $customer->type);
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'customer.updated']);
+    }
+
+    #[Test]
+    public function it_forbids_the_edit_form_when_actor_is_finance(): void
+    {
+        $admin = User::factory()->forRole(UserRole::Admin)->create();
+        $finance = User::factory()->forRole(UserRole::Finance)->create();
+        $customer = app(CustomerService::class)->create([
+            'name' => 'Pelanggan Baca Saja',
+            'type' => CustomerType::Individual->value,
+        ], $admin);
+
+        $this->actingAs($finance)
+            ->get(route('customers.edit', $customer))
+            ->assertForbidden();
+    }
+
+    #[Test]
     public function it_lists_customers_when_admin_opens_the_index_page(): void
     {
         $admin = User::factory()->forRole(UserRole::Admin)->create();
