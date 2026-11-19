@@ -2,11 +2,13 @@
 
 namespace App\Providers;
 
+use App\Models\Customer;
 use App\Models\Division;
 use App\Models\Notification;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\WorkCalendar;
+use App\Policies\CustomerPolicy;
 use App\Policies\DivisionPolicy;
 use App\Policies\NotificationPolicy;
 use App\Policies\SettingPolicy;
@@ -30,6 +32,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::policy(Customer::class, CustomerPolicy::class);
         Gate::policy(Division::class, DivisionPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(WorkCalendar::class, WorkCalendarPolicy::class);

@@ -31,6 +31,9 @@ class RolePermissionSeeder extends Seeder
         'menu.material',
         'menu.reports',
         'menu.system',
+        'customers.view',
+        'customers.manage',
+        'customers.delete',
         'divisions.view',
         'divisions.manage',
         'users.view',
@@ -53,6 +56,8 @@ class RolePermissionSeeder extends Seeder
             'menu.dashboard',
             'menu.customer',
             'menu.order',
+            'customers.view',
+            'customers.manage',
         ],
         'designer' => [
             'menu.dashboard',
@@ -64,6 +69,7 @@ class RolePermissionSeeder extends Seeder
             'menu.production',
             'menu.finishing',
             'menu.material',
+            'customers.view',
         ],
         'field' => [
             'menu.dashboard',
@@ -72,6 +78,7 @@ class RolePermissionSeeder extends Seeder
         'finance' => [
             'menu.dashboard',
             'menu.finance',
+            'customers.view',
         ],
         'hrd' => [
             'menu.dashboard',

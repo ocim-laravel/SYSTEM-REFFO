@@ -7,12 +7,32 @@
 
 ## FASE AKTIF
 
-**PH-00 — FONDASI SISTEM**
-Status: **BERJALAN**
-Estimasi: Minggu 1–6
-Modul: MOD-10 (System Management) + fondasi lintas modul
+**PH-01 — PELANGGAN / CRM**
+Status: **BERJALAN** *(gate PH-00 disetujui Owner, 19 November 2026 — transisi dicatat awal sesi)*
+Estimasi: Minggu 7–8
+Modul: MOD-01 (Customer / CRM)
 
-### Ruang lingkup fase ini (HANYA ini)
+### Ruang lingkup PH-01 (HANYA ini)
+- [x] **AC-01-1** Admin dapat menambah pelanggan; kode `CUS-xxxx` otomatis & unik *(format ADR-002 `CUS-TAHUN-0001` via `NumberGeneratorService`; create/read/update/delete dasar + feature test)*
+- [ ] AC-01-2 Pelanggan nonaktif tidak dapat dipilih saat membuat order baru (diuji di service)
+- [ ] AC-01-3 Pencarian nama/telepon/kode mengembalikan hasil yang benar (feature test)
+- [ ] AC-01-4 Halaman detail menampilkan profil dan tab riwayat order (boleh kosong)
+- [x] AC-01-5 Update data pelanggan tercatat di `audit_logs` dengan nilai before/after *(terpenuhi bersama AC-01-1: `CustomerService::update()` menulis snapshot before/after + feature test)*
+- [ ] AC-01-6 Role Finance tidak dapat mengubah data pelanggan (403)
+
+### JANGAN DISENTUH di PH-01
+- MOD-02 (order), MOD-03 (desain), MOD-04 (produksi), MOD-05 (finishing)
+- MOD-06 (delivery), MOD-07 (finance), MOD-08/09 (HRD/material), MOD-11 (laporan)
+- Dashboard & laporan, fitur realtime per divisi
+
+### Kriteria selesai PH-01 (gate)
+- [ ] AC-01-1 … AC-01-6 lulus (lihat `docs/plan/modules/MOD-01-customer.md`)
+- [ ] Admin bisa mendaftarkan 10 pelanggan nyata dan mencarinya kembali
+- [ ] `php artisan test` hijau & `pint` bersih
+
+---
+
+### Arsip PH-00 — ruang lingkup (fase sebelumnya)
 - [ ] Instalasi Laravel 13 + MySQL `system_reffo_v2` + Vite/Tailwind/Alpine
 - [x] Layout dasar (sidebar per divisi, header, notifikasi, breadcrumb) *(breadcrumb otomatis dari route + dropdown notifikasi native `<details>` tanpa Alpine; feature test)*
 - [x] Login / logout / reset password / ubah password *(AC-10-1 selesai + feature test)*
@@ -28,18 +48,18 @@ Modul: MOD-10 (System Management) + fondasi lintas modul
 - [x] Infrastruktur Reverb: konfigurasi, private channel, otorisasi channel *(AC-10-6: kanal `user.{id}`, `role.{role}`, `division.{code}`; event uji setelah commit; Echo client; feature test)*
 - [x] Halaman error & middleware dasar (active user, must-change-password) *(view 403/404/500 mandiri; `EnsureUserIsActive` alias `active` di web group + JSON 403; feature test)*
 
-### JANGAN DISENTUH di fase ini
+#### Arsip PH-00 — JANGAN DISENTUH saat itu
 - Modul pelanggan, order, desain, operator, finishing, pengiriman, keuangan
 - Dashboard & laporan
 - HRD, material, absensi
 - Fitur realtime per divisi (baru infrastrukturnya saja)
 
-### Kriteria selesai fase (gate)
+#### Arsip PH-00 — kriteria selesai (gate)
 - [x] AC-10-1 … AC-10-7 lulus (lihat `docs/plan/modules/MOD-10-system.md`) *(AC-10-1 … AC-10-7 selesai)*
 - [ ] User dengan 4 role contoh bisa login dan hanya melihat menu divisinya *(menu per 7 role sudah diuji otomatis; demo manual belum)*
 - [x] Audit log terbukti mencatat create/update/delete user *(feature test AC-10-4, 12 test / 74 assertion)*
 - [x] `php artisan test` hijau, `pint` bersih *(134/134 test, 540 assertion pada sesi ini)*
-- [ ] Demo ke Owner disetujui → boleh lanjut PH-01
+- [x] Demo ke Owner disetujui → boleh lanjut PH-01 *(disetujui Owner, 19 November 2026; dicatat di awal sesi PH-01)*
 
 ---
 
@@ -47,8 +67,8 @@ Modul: MOD-10 (System Management) + fondasi lintas modul
 
 | Fase | Divisi | Modul | Status |
 |---|---|---|---|
-| PH-00 | Fondasi Sistem | MOD-10 | **AKTIF** |
-| PH-01 | Pelanggan (CRM) | MOD-01 | Menunggu |
+| PH-00 | Fondasi Sistem | MOD-10 | Selesai (gate disetujui Owner 2026-11-19) |
+| PH-01 | Pelanggan (CRM) | MOD-01 | **AKTIF** |
 | PH-02 | Admin & Order | MOD-02 | Menunggu |
 | PH-03 | Designer | MOD-03 | Menunggu |
 | PH-04 | Operator / Printing | MOD-04 | Menunggu |
@@ -75,3 +95,5 @@ Modul: MOD-10 (System Management) + fondasi lintas modul
 | 2026-11-19 | PH-00 (MOD-10) | AC-10-7 (override Owner wajib alasan + audit log, BR-18) | `app/Enums/OverridableRule.php`, `app/Http/Requests/System/OverrideRequest.php`, `app/Services/System/OverrideService.php`, `app/Http/Controllers/System/OverrideController.php`, `resources/views/system/overrides/{index,create}.blade.php`, `database/seeders/RolePermissionSeeder.php`, `app/Services/System/MenuService.php`, `routes/web.php`, `tests/Feature/System/OwnerOverrideTest.php`, `PROGRESS.md` | Permission baru `system.override` hanya untuk Owner; route/halaman `/system/overrides` + menu Owner-only. `reason` wajib (`required|string|min:5|max:1000`, di-trim) → 422 bila kosong. `OverrideService::override()` menulis audit_log `override.{rule}` dengan before/after (data sensitif dibuang), reason, actor, ip, user-agent; `hasOverride()` jadi gerbang bypass yang bisa ditanyakan kode aturan lain. Feature test: tanpa alasan → 422, alasan spasi → 422, dengan alasan → redirect + terekam (before/after/reason), non-Owner → 403, sanitasi & deteksi override. `php artisan test` hijau (91/91, 398 assertion); `pint` bersih; `php artisan db:seed --class=RolePermissionSeeder --force` sukses. Migration tidak diubah; modul lain tidak disentuh. Commit: `feat(MOD-10): override Owner dengan alasan [AC-10-7]`. |
 | 2026-11-19 | PH-00 (MOD-10) | Sisa fondasi: seeder kalender kerja, pengaturan sistem, penomoran otomatis, halaman error + middleware aktif, breadcrumb & notifikasi layout | `app/Enums/NumberPrefix.php`, `app/Models/{Setting,NumberSequence,Notification}.php`, `app/Services/System/{SettingService,NumberGeneratorService,BreadcrumbService,NotificationService}.php`, `app/Policies/{SettingPolicy,NotificationPolicy}.php`, `app/Http/Requests/System/SettingsRequest.php`, `app/Http/Controllers/System/{SettingController,NotificationController}.php`, `app/Http/Middleware/EnsureUserIsActive.php`, `database/migrations/2026_11_19_11*.php`, `database/seeders/WorkCalendarSeeder.php`, `database/seeders/DatabaseSeeder.php`, `database/seeders/RolePermissionSeeder.php`, `app/Providers/AppServiceProvider.php`, `app/Services/System/MenuService.php`, `bootstrap/app.php`, `routes/web.php`, `resources/views/system/settings/index.blade.php`, `resources/views/notifications/index.blade.php`, `resources/views/layouts/partials/{breadcrumb,notifications}.blade.php`, `resources/views/layouts/app.blade.php`, `resources/views/layouts/partials/sidebar.blade.php`, `resources/views/errors/{403,404,500}.blade.php`, `tests/Feature/System/{WorkCalendarSeederTest,NumberGeneratorTest,SettingsTest,ActiveUserMiddlewareTest,ErrorPagesTest,BreadcrumbTest,NotificationTest}.php`, `PROGRESS.md` | 3 migrasi baru (SQLite & MySQL aman). Settings singleton Owner-only (`settings.view/manage`) — `company_name`, logo (disk `public`, `settings/`, maks 2 MB PNG/JPG/WEBP), jam kerja `H:i` dengan jam selesai > jam mulai; `SettingService::update()` transaksi + audit `settings.updated` (BR-17); `Schema::hasTable` guard agar layout aman sebelum migrasi. Penomoran `PREFIX-YEAR-0001` (CUS/ORD/ITM) dengan `lockForUpdate()` + rollback ikut transaksi. `WorkCalendarSeeder`: 104 weekend + 17 libur nasional + 8 cuti bersama 2026 (SKB 3 Menteri; 24 Des didahulukan dari 26 Des), `upsert` idempoten — 125 entri ter-seed di MySQL lokal. Middleware `EnsureUserIsActive` (alias `active`, web group): nonaktif → logout + flash `error`, JSON → 403. Error view 403/404/500 mandiri (tidak bergantung layout/DB). Breadcrumb otomatis dari nama route (label Indonesia, tepat satu `aria-current`), dropdown notifikasi native `<details>` (Alpine belum terpasang, tidak menambah paket). 43 feature test baru. `php artisan test` hijau (134/134, 540 assertion); `pint` bersih; `php artisan migrate --force` + `db:seed --class=WorkCalendarSeeder --force` sukses. Laravel Boost sengaja tidak dipasang (butuh perubahan `composer.json`/`AGENTS.md` → butuh ADR). Modul MOD-01 dst. tidak disentuh. |
 | 2026-11-19 | PH-00 (MOD-10) | ADR-002 — format nomor `CUS-2026-0001` & cuti bersama 24 Des | `docs/plan/07-decisions/ADR-002-penomoran-kalender.md`, `PROGRESS.md` | Disetujui Owner. Hanya menambah file ADR baru; file `docs/plan/**` lama, kode, dan test tidak disentuh. |
+| 2026-11-19 | PH-01 (MOD-01) | Transisi fase: gate PH-00 disetujui Owner, buka PH-01 | `PROGRESS.md` | Dicatat di awal sesi setelah konfirmasi Owner. Fase aktif diubah ke PH-01; AC-01-1 ditargetkan. Tidak ada kode modul lain yang disentuh. |
+| 2026-11-19 | PH-01 (MOD-01) | AC-01-1 (CRUD pelanggan + kode `CUS` otomatis/unik, BR-17) | `database/migrations/2026_11_19_120000_create_customers_table.php`, `app/Enums/CustomerType.php`, `app/Models/Customer.php`, `app/Policies/CustomerPolicy.php`, `app/Services/Customer/CustomerService.php`, `app/Http/Requests/Customer/{CustomerRequest,DeleteCustomerRequest}.php`, `app/Http/Controllers/Customer/CustomerController.php`, `resources/views/customers/{index,_form,create,edit,show}.blade.php`, `database/seeders/RolePermissionSeeder.php`, `app/Providers/AppServiceProvider.php`, `routes/web.php`, `tests/Feature/Customer/CustomerCrudTest.php`, `PROGRESS.md` | Kode wajib dari `NumberGeneratorService::nextCustomer()` dalam transaksi (ADR-002: `CUS-TAHUN-0001`, lockForUpdate, rollback ikut transaksi); input `code` dari klien diabaikan. permission `customers.view/manage/delete`: lihat Admin/Produksi/Finance/Owner, ubah Admin/Owner, hapus permanen Owner + alasan wajib. Audit `customer.created/updated/deleted` dengan before/after & reason (BR-17/BR-18). `php artisan test` hijau (142/142, 575 assertion — 8 test baru); `pint` bersih; `php artisan migrate --force` & seeder permission MySQL lokal sukses. MOD-02 dst tidak disentuh. AC-01-2/01-3/01-4/01-6 masih tertunda; AC-01-5 juga terpenuhi lewat audit before/after pada `CustomerService::update()` + feature test. |
