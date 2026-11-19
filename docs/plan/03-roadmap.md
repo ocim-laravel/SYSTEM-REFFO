@@ -13,21 +13,21 @@ PH-00 Fondasi Sistem          (MOD-10)                 minggu 1–6
    ↓
 PH-01 Pelanggan / CRM         (MOD-01)                 minggu 7–8
    ↓
-PH-02 Admin & Order           (MOD-02)                 minggu 9–12
+PH-02 Admin & Order           (MOD-02)                 minggu 9–13
    ↓
-PH-03 Designer                (MOD-03)                 minggu 13–16
+PH-03 Designer                (MOD-03)                 minggu 14–17
    ↓
-PH-04 Operator / Printing     (MOD-04)                 minggu 17–21
+PH-04 Operator / Printing     (MOD-04)                 minggu 18–22
    ↓
-PH-05 Finishing / QC / Packing(MOD-05)                 minggu 22–24
+PH-05 Finishing / QC / Packing(MOD-05)                 minggu 23–25
    ↓
-PH-06 Reklame / Delivery      (MOD-06)                 minggu 25–27
+PH-06 Reklame / Delivery      (MOD-06)                 minggu 26–28
    ↓
-PH-07 Finance                 (MOD-07)                 minggu 28–30
+PH-07 Finance                 (MOD-07)                 minggu 29–31
    ↓
-PH-08 HRD & Material          (MOD-08, MOD-09)         minggu 31–33
+PH-08 HRD & Material          (MOD-08, MOD-09)         minggu 32–34
    ↓
-PH-09 Realtime, Laporan, Deploy (MOD-11 + hardening)   minggu 34–40
+PH-09 Realtime, Laporan, Deploy (MOD-11 + hardening)   minggu 35–40
 ```
 
 ---
@@ -75,7 +75,8 @@ Fungsi yang harus utuh dalam satu fase:
 Fungsi yang harus utuh dalam satu fase:
 1. Buat order + pilih pelanggan aktif
 2. Tambah/hapus/edit item (multi-item, BR-01)
-3. Spesifikasi item per kategori (printing / reklame)
+3. Spesifikasi item per jenis hitung: Printing/m² atau Produk/Produk Jadi/pcs;
+   layanan Reklame mengaktifkan catatan tindakan konstruksi/rangka dan pemasangan
 4. Harga, diskon, total, DP
 5. Deadline order & item; prioritas per item (BR-02)
 6. Draft oleh Designer, validasi oleh Admin (BR-03)
@@ -83,6 +84,15 @@ Fungsi yang harus utuh dalam satu fase:
 8. Pembatalan order + biaya aktual & kesepakatan (BR-15)
 9. Cetak/ekspor ringkasan order (PDF sederhana)
 10. Audit log perubahan harga & status (BR-17)
+11. Ringkasan sebelum proses: pelanggan, layanan, item, subtotal, diskon,
+    biaya kirim, dan total akhir
+
+Catatan jadwal PH-02:
+- Minggu 9–12: fungsi order inti dan gate PH-02.
+- Minggu 13: penyempurnaan UI berdasarkan ADR-007 dan ADR-008, termasuk
+  order campuran pcs/m², ringkasan sebelum proses, dan format nota/PDF.
+- Penyempurnaan ini tetap berada di MOD-02 dan tidak mengubah dependensi
+  MOD-03.
 
 **AC:** `modules/MOD-02-order.md`
 **Gate:** Admin membuat 1 order 4 item (campur printing & reklame) end-to-end sampai antrean desain.

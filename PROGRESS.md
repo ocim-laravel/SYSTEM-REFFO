@@ -8,8 +8,8 @@
 ## FASE AKTIF
 
 **PH-02 â€” ADMIN & ORDER**
-Status: **SELESAI** *(gate PH-02 disetujui Owner 19 November 2026; semua AC-02-1...AC-02-8 lulus)*
-Estimasi: Minggu 9â€“12
+Status: **SELESAI + PENYEMPURNAAN UI MENUNGGU IMPLEMENTASI** *(gate PH-02 disetujui Owner 19 November 2026; AC-02-9...AC-02-10 ditambahkan melalui ADR-008)*
+Estimasi: Minggu 9â€“13
 Modul: MOD-02 (Admin & Order)
 Sesi ini: **AC-02-7 â€” guard item ACC (BR-05)** + **data demo gate PH-02** (1 pelanggan + 1 order 4 item, kode `ORD-2026-0001`). AC-02-8 (PDF) selesai di sesi sebelumnya.
 
@@ -65,7 +65,8 @@ Sesi ini: **AC-02-7 â€” guard item ACC (BR-05)** + **data demo gate PH-02**
 - `konstruksi/rangka` dan `pemasangan` hanya menjadi catatan item pada PH-02; penjadwalan nyata tetap di PH-06.
 - Input pelanggan tetap memakai pelanggan aktif tersimpan; tombol tambah membuka `/customers/create` di tab baru, bukan modal/AJAX.
 - **Status:** USULAN PERUBAHAN disetujui - siap dikerjakan sebagai sesi revisi MOD-02.
-- **Catatan sesi revisi MOD-02 (20 November 2026):** revisi UI terimplementasi — link "Tambah Pelanggan" (`target="_blank"`), checkbox layanan `printing`/`kirim`/`reklame`, alamat kirim (jika `kirim` → sebelum catatan), sub-tipe printing `pcs`/`m2` + luas efektif, tindakan reklame, diskon di ringkasan setelah subtotal, preview subtotal/total. Storage layanan/alamat/tindakan memakai `order_items.specification` JSON (existing column, tanpa migrasi). Enum baru `FinishingType` & `ActionType` dibuat. `php artisan test` hijau (209/209, 911 assertion), `pint` bersih. Belum di-commit.
+- **Catatan sesi revisi MOD-02 (20 November 2026):** revisi UI terimplementasi — link "Tambah Pelanggan" (`target="_blank"`), checkbox layanan `printing`/`kirim`/`reklame`, alamat kirim (jika `kirim` → sebelum catatan), sub-tipe printing `pcs`/`m2` + luas efektif, tindakan reklame, diskon di ringkasan setelah subtotal, preview subtotal/total. Storage layanan/alamat/tindakan memakai `order_items.specification` JSON (existing column, tanpa migrasi). Enum baru `FinishingType` & `ActionType` dibuat. `php artisan test` hijau (209/209, 912 assertion), `pint` bersih. Commit `6a2d60c`.
+- **Revisi lanjutan disetujui Owner (20 November 2026, ADR-008):** satu order boleh mencampur item Produk/Produk Jadi (pcs) dan Printing (m²); ringkasan sebelum proses menampilkan pelanggan, layanan, item, subtotal otomatis, diskon editable, biaya kirim editable, dan total akhir; nota menampilkan quantity asli serta luas tagihan item m². Penyempurnaan dijadwalkan pada minggu 13; PH-03 bergeser ke minggu 14–17.
 
 ---
 
@@ -113,14 +114,14 @@ Sesi ini: **AC-02-7 â€” guard item ACC (BR-05)** + **data demo gate PH-02**
 |---|---|---|---|
 | PH-00 | Fondasi Sistem | MOD-10 | Selesai (gate disetujui Owner 2026-11-19) |
 | PH-01 | Pelanggan (CRM) | MOD-01 | Selesai (gate disetujui Owner 2026-11-19; AC-01-1â€¦AC-01-6) |
-| PH-02 | Admin & Order | MOD-02 | **Selesai** (gate disetujui Owner 19 November 2026; AC-02-1...AC-02-8 lulus) |
-| PH-03 | Designer | MOD-03 | Menunggu |
-| PH-04 | Operator / Printing | MOD-04 | Menunggu |
-| PH-05 | Finishing / QC / Packing | MOD-05 | Menunggu |
-| PH-06 | Reklame / Delivery / Installation | MOD-06 | Menunggu |
-| PH-07 | Finance | MOD-07 | Menunggu |
-| PH-08 | HRD & Material | MOD-08, MOD-09 | Menunggu |
-| PH-09 | Realtime, Laporan, Hardening, Deploy | MOD-11 | Menunggu |
+| PH-02 | Admin & Order | MOD-02 | **Gate selesai; penyempurnaan ADR-008 dijadwalkan minggu 13** |
+| PH-03 | Designer | MOD-03 | Menunggu (minggu 14–17) |
+| PH-04 | Operator / Printing | MOD-04 | Menunggu (minggu 18–22) |
+| PH-05 | Finishing / QC / Packing | MOD-05 | Menunggu (minggu 23–25) |
+| PH-06 | Reklame / Delivery / Installation | MOD-06 | Menunggu (minggu 26–28) |
+| PH-07 | Finance | MOD-07 | Menunggu (minggu 29–31) |
+| PH-08 | HRD & Material | MOD-08, MOD-09 | Menunggu (minggu 32–34) |
+| PH-09 | Realtime, Laporan, Hardening, Deploy | MOD-11 | Menunggu (minggu 35–40) |
 
 ---
 
@@ -128,7 +129,7 @@ Sesi ini: **AC-02-7 â€” guard item ACC (BR-05)** + **data demo gate PH-02**
 
 | Tanggal | Fase | ID selesai | File diubah | Catatan |
 |---|---|---|---|---|
-| 2026-11-20 | PH-02 (MOD-02) | Revisi UI ADR-007 (sesi revisi MOD-02) | `resources/views/orders/create.blade.php`, `app/Http/Requests/Order/StoreOrderRequest.php`, `app/Services/Order/OrderService.php`, `app/Enums/{FinishingType,ActionType}.php` (baru), `tests/Feature/Order/OrderAccessAndStateTest.php`, `PROGRESS.md` | Sesi revisi UI MOD-02 per ADR-007: link "Tambah Pelanggan" (`/customers/create`, `target="_blank"`), checkbox layanan `printing`/`kirim`/`reklame`, field alamat (jika `kirim` → sebelum catatan, tersembunyi & tidak dikirim bila tidak dicentang), sub-tipe printing `pcs`/`m2` + luas efektif (panjang × lebar × quantity → qty × unit_price, simpan di `specification`), tindakan reklame (jika `reklame` → `reklame_actions`, tersimpan di `specification.tindakan`), diskon di ringkasan setelah subtotal, preview subtotal/total. Storage via `order_items.specification` JSON existing (tanpa migrasi). Enum baru `FinishingType` & `ActionType`. Test baru: 7 test (46 total di OrderAccessAndStateTest hijau). `php artisan test` hijau (209/209, 911 assertion); `pint --dirty` bersih. Belum di-commit. |
+| 2026-11-20 | PH-02 (MOD-02) | Revisi UI ADR-007 (sesi revisi MOD-02) | `resources/views/orders/create.blade.php`, `app/Http/Requests/Order/StoreOrderRequest.php`, `app/Services/Order/OrderService.php`, `app/Enums/{FinishingType,ActionType}.php` (baru), `tests/Feature/Order/OrderAccessAndStateTest.php`, `PROGRESS.md` | Sesi revisi UI MOD-02 per ADR-007: link "Tambah Pelanggan" (`/customers/create`, `target="_blank"`), checkbox layanan `printing`/`kirim`/`reklame`, field alamat (jika `kirim` → sebelum catatan, tersembunyi & tidak dikirim bila tidak dicentang), sub-tipe printing `pcs`/`m2` + luas efektif (panjang × lebar × quantity → qty × unit_price, simpan di `specification`), tindakan reklame, diskon di ringkasan setelah subtotal, preview subtotal/total. Storage via `order_items.specification` JSON existing (tanpa migrasi). Enum baru `FinishingType` & `ActionType`. Test baru: 7 test. `php artisan test` hijau (209/209, 912 assertion); `pint --dirty` bersih. Commit `6a2d60c`. |
 | 2026-11-18 | PH-00 (MOD-10) | AC-10-1 (parsial: login/logout, tolak user nonaktif, feature test) | `app/Http/Controllers/Auth/LoginController.php`, `app/Models/User.php`, `database/factories/UserFactory.php`, `database/seeders/UserSeeder.php`, `database/migrations/2026_11_18_124512_add_is_active_to_users_table.php`, `tests/Feature/Auth/LoginTest.php`, `tests/Feature/ExampleTest.php`, `app/Events/RealtimeNotification.php`, `app/Http/Middleware/EnsureUserHasRole.php`, `bootstrap/app.php`, `PROGRESS.md` | Migrasi & seeder dijalankan (MySQL `DB-sistem-reffo-2`); `php artisan test` hijau (8/27); `pint` bersih. Reset/ubah password wajib, 7 role/permission, audit log, kalender kerja, dsb. masih tertunda. |
 | 2026-11-18 | PH-00 (MOD-10) | AC-10-1 (sisa: reset password, ubah password wajib, rate limit login, audit login BR-17) | `app/Http/Controllers/Auth/LoginController.php`, `app/Http/Controllers/Auth/PasswordResetController.php`, `app/Http/Controllers/Auth/PasswordChangeController.php`, `app/Http/Requests/Auth/*.php`, `app/Http/Middleware/EnsurePasswordIsChanged.php`, `app/Models/AuditLog.php`, `app/Models/User.php`, `app/Services/System/AuditLogService.php`, `database/migrations/2026_11_18_130000_add_must_change_password_to_users_table.php`, `database/migrations/2026_11_18_130100_create_audit_logs_table.php`, `database/factories/UserFactory.php`, `routes/web.php`, `bootstrap/app.php`, `resources/views/auth/*.blade.php`, `resources/views/layouts/app.blade.php`, `tests/Feature/Auth/LoginSecurityTest.php`, `tests/Feature/Auth/PasswordResetTest.php`, `tests/Feature/Auth/PasswordChangeTest.php`, `PROGRESS.md` | `php artisan test` hijau (21/21); `pint` bersih; migrasi dijalankan. Role/permission/divisi tidak disentuh. Sisa PH-00: AC-10-2 â€¦ AC-10-7. |
 | 2026-11-18 | PH-00 (MOD-10) | AC-10-2 (7 role + menu per role) & AC-10-3 (403 pada route terlindungi) | `composer.json`, `composer.lock`, `config/permission.php`, `app/Enums/UserRole.php`, `app/Models/User.php`, `app/Models/Division.php`, `app/Policies/DivisionPolicy.php`, `app/Services/System/MenuService.php`, `app/Services/System/DivisionService.php`, `app/Http/Requests/System/DivisionRequest.php`, `app/Http/Controllers/DashboardController.php`, `app/Http/Controllers/System/DivisionController.php`, `app/Http/Controllers/Controller.php`, `app/Providers/AppServiceProvider.php`, `app/Http/Controllers/Auth/LoginController.php`, `app/Http/Controllers/Auth/PasswordChangeController.php`, `database/migrations/2026_11_18_135333_create_permission_tables.php`, `database/migrations/2026_11_18_135400_create_divisions_table.php`, `database/migrations/2026_11_18_135500_add_division_id_to_users_table.php`, `database/seeders/RolePermissionSeeder.php`, `database/seeders/DivisionSeeder.php`, `database/seeders/UserSeeder.php`, `database/seeders/DatabaseSeeder.php`, `database/factories/UserFactory.php`, `routes/web.php`, `resources/views/layouts/app.blade.php`, `resources/views/layouts/partials/sidebar.blade.php`, `resources/views/dashboard.blade.php`, `resources/views/system/divisions/*.blade.php`, `tests/Feature/System/*.php`, `PROGRESS.md` | `spatie/laravel-permission` dipasang (paket diizinkan kontrak). 7 role, 14 permission, 6 divisi, 7 akun demo (`reffo12345`). `php artisan test` hijau (42/42, 191 assertion); `pint` bersih; migrasi + seeder MySQL lokal sukses. AC-10-4 â€¦ AC-10-7 tidak disentuh. |

@@ -32,6 +32,11 @@
 | `item_status_histories` | order_item_id, from_status, to_status, changed_by, note | N—1 items |
 | `order_cancellations` | order_id, reason, actual_cost, settlement_amount, settlement_note, decided_by, decided_at | 1—1 order |
 
+> Satu `orders` dapat mencampur item pcs dan m². `order_items.qty` menyimpan
+> quantity penagihan: jumlah pcs untuk Produk/Produk Jadi atau luas efektif m²
+> untuk Printing. `order_items.specification` menyimpan mode, quantity asli,
+> ukuran, dan luas m² agar detail nota tidak kehilangan informasi asal.
+
 ## D. Desain (MOD-03)
 
 | Tabel | Kolom penting | Relasi |
