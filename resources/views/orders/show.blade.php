@@ -22,6 +22,9 @@
                     <a href="{{ route('orders.cancel', $order) }}" class="btn danger">Batalkan Order</a>
                 @endif
             @endcan
+            @can('view', $order)
+                <a href="{{ route('orders.pdf', $order) }}" class="btn secondary">Unduh Ringkasan (PDF)</a>
+            @endcan
             <a href="{{ route('orders.index') }}" class="btn secondary">Kembali</a>
         </div>
     </div>

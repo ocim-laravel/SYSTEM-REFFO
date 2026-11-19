@@ -9,8 +9,10 @@ use App\Http\Requests\Order\StoreOrderRequest;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Services\Order\OrderService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 class OrderController extends Controller
@@ -103,6 +105,16 @@ class OrderController extends Controller
 
         return redirect()->route('orders.show', $order)
             ->with('status', 'Order berhasil dibatalkan.');
+    }
+
+    public function exportPdf(Order $order): Response
+    {
+        $this->authorize('view', $order);
+
+        $order->load(['customer', 'items']);
+
+        return Pdf::loadView('orders.pdf', ['order' => $order])
+            ->download($order->code.'.pdf');
     }
 
     /**
