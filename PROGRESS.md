@@ -7,28 +7,39 @@
 
 ## FASE AKTIF
 
-**PH-01 — PELANGGAN / CRM**
-Status: **BERJALAN** *(gate PH-00 disetujui Owner, 19 November 2026 — transisi dicatat awal sesi)*
-Estimasi: Minggu 7–8
-Modul: MOD-01 (Customer / CRM)
+**PH-02 — ADMIN & ORDER**
+Status: **BERJALAN** *(fase aktif ditetapkan awal sesi; kode PH-01 selesai, demo manual 10 pelanggan nyata masih tercatat di arsip)*
+Estimasi: Minggu 9–12
+Modul: MOD-02 (Admin & Order)
+Sesi ini: **skema + domain saja** — belum controller, view, route, policy, atau menu.
 
-### Ruang lingkup PH-01 (HANYA ini)
-- [x] **AC-01-1** Admin dapat menambah pelanggan; kode `CUS-xxxx` otomatis & unik *(format ADR-002 `CUS-TAHUN-0001` via `NumberGeneratorService`; create/read/update/delete dasar + feature test)*
-- [x] AC-01-2 Pelanggan nonaktif tidak dapat dipilih saat membuat order baru (diuji di service) *(scope `Customer::active()` + `CustomerService::assertSelectableForOrder()` menolak nonaktif via `ValidationException`; feature test 3 kasus — pembuatan order sendiri menunggu MOD-02)*
-- [x] AC-01-3 Pencarian nama/telepon/kode mengembalikan hasil yang benar (feature test) *(filter nama, kode, telepon, tipe, status di `/customers`; `CustomerFilterRequest` + `CustomerService::search()`; feature test 8 kasus)*
-- [x] AC-01-4 Halaman detail menampilkan profil dan tab riwayat order (boleh kosong) *(profil lengkap termasuk baris Status + bagian "Riwayat Order" dengan empty state; feature test 4 kasus — data order terisi di MOD-02)*
-- [x] AC-01-5 Update data pelanggan tercatat di `audit_logs` dengan nilai before/after *(terpenuhi bersama AC-01-1: `CustomerService::update()` menulis snapshot before/after + feature test)*
-- [x] AC-01-6 Role Finance tidak dapat mengubah data pelanggan (403) *(feature test: create & update/edit ditolak 403; Produksi & Finance hanya baca, menu Pelanggan tampil; Admin & Owner CRUD)*
+### Ruang lingkup PH-02 (HANYA ini)
+- [x] **AC-02-1** Order dengan 3 item menghitung total benar, termasuk diskon *(`OrderService::create()`: subtotal `Σ qty × unit_price`, dikurangi diskon, ditambah `delivery_fee` sekali per order BR-14; `tax` tidak masuk rumus; feature test)*
+- [x] **AC-02-2** Mengubah status item A tidak mengubah item B (BR-02) *(`changeItemStatus()` + `item_status_histories` integritas #7; feature test)*
+- [x] **AC-02-6** Setiap perubahan harga tercatat di audit log dengan before/after (BR-17) *(domain: `OrderService::updateItemPrice()` + feature test; akses via UI/route menyusul)*
+- [ ] AC-02-3 Draft buatan Designer berstatus `pending_validation`; Designer tidak bisa memvalidasi (403) (BR-03) — butuh policy/controller
+- [ ] AC-02-4 Setelah `validated`, item masuk `queued_design` — butuh state machine lanjutan
+- [ ] AC-02-5 Pembatalan menyimpan alasan, biaya aktual, dan nilai kesepakatan terpisah (BR-15) — tabel sudah ada, service belum
+- [ ] AC-02-7 Item yang sudah `acc` tidak bisa diubah tanpa Change Request (BR-05, MOD-03)
+- [ ] AC-02-8 PDF ringkasan order memuat pelanggan, item, total, deadline
 
-### JANGAN DISENTUH di PH-01
-- MOD-02 (order), MOD-03 (desain), MOD-04 (produksi), MOD-05 (finishing)
+### JANGAN DISENTUH di PH-02
+- MOD-03 (desain), MOD-04 (produksi), MOD-05 (finishing)
 - MOD-06 (delivery), MOD-07 (finance), MOD-08/09 (HRD/material), MOD-11 (laporan)
-- Dashboard & laporan, fitur realtime per divisi
+- Controller, view, route, policy, dan menu order (belum dibuat pada sesi skema + domain)
+- Dashboard, laporan, dan fitur realtime per divisi
 
-### Kriteria selesai PH-01 (gate)
-- [x] AC-01-1 … AC-01-6 lulus (lihat `docs/plan/modules/MOD-01-customer.md`)
-- [ ] Admin bisa mendaftarkan 10 pelanggan nyata dan mencarinya kembali
-- [ ] `php artisan test` hijau & `pint` bersih
+### Kriteria selesai PH-02 (gate)
+- [ ] AC-02-1 … AC-02-8 lulus (lihat `docs/plan/modules/MOD-02-order.md`)
+- [ ] Demo 1 order 4 item (campur printing & reklame) sampai antrean desain
+- [x] `php artisan test` hijau & `pint` bersih *(170 test / 693 assertion pada sesi ini)*
+
+---
+
+### Arsip PH-01 — ringkasan (fase sebelumnya)
+- [x] AC-01-1 … AC-01-6 selesai (lihat `docs/plan/modules/MOD-01-customer.md`)
+- [ ] Demo 10 pelanggan nyata belum dicatat
+- Catatan: `CustomerService::assertSelectableForOrder()` (AC-01-2) kini dipakai nyata oleh `OrderService::create()` — pelanggan nonaktif ditolak saat order dibuat.
 
 ---
 
@@ -68,8 +79,8 @@ Modul: MOD-01 (Customer / CRM)
 | Fase | Divisi | Modul | Status |
 |---|---|---|---|
 | PH-00 | Fondasi Sistem | MOD-10 | Selesai (gate disetujui Owner 2026-11-19) |
-| PH-01 | Pelanggan (CRM) | MOD-01 | **AKTIF** |
-| PH-02 | Admin & Order | MOD-02 | Menunggu |
+| PH-01 | Pelanggan (CRM) | MOD-01 | Selesai (AC-01-1…AC-01-6; demo 10 pelanggan nyata tersisa) |
+| PH-02 | Admin & Order | MOD-02 | **AKTIF** (skema + domain: AC-02-1, AC-02-2, AC-02-6 domain) |
 | PH-03 | Designer | MOD-03 | Menunggu |
 | PH-04 | Operator / Printing | MOD-04 | Menunggu |
 | PH-05 | Finishing / QC / Packing | MOD-05 | Menunggu |
@@ -99,3 +110,5 @@ Modul: MOD-01 (Customer / CRM)
 | 2026-11-19 | PH-01 (MOD-01) | AC-01-1 (CRUD pelanggan + kode `CUS` otomatis/unik, BR-17) | `database/migrations/2026_11_19_120000_create_customers_table.php`, `app/Enums/CustomerType.php`, `app/Models/Customer.php`, `app/Policies/CustomerPolicy.php`, `app/Services/Customer/CustomerService.php`, `app/Http/Requests/Customer/{CustomerRequest,DeleteCustomerRequest}.php`, `app/Http/Controllers/Customer/CustomerController.php`, `resources/views/customers/{index,_form,create,edit,show}.blade.php`, `database/seeders/RolePermissionSeeder.php`, `app/Providers/AppServiceProvider.php`, `routes/web.php`, `tests/Feature/Customer/CustomerCrudTest.php`, `PROGRESS.md` | Kode wajib dari `NumberGeneratorService::nextCustomer()` dalam transaksi (ADR-002: `CUS-TAHUN-0001`, lockForUpdate, rollback ikut transaksi); input `code` dari klien diabaikan. permission `customers.view/manage/delete`: lihat Admin/Produksi/Finance/Owner, ubah Admin/Owner, hapus permanen Owner + alasan wajib. Audit `customer.created/updated/deleted` dengan before/after & reason (BR-17/BR-18). `php artisan test` hijau (142/142, 575 assertion — 8 test baru); `pint` bersih; `php artisan migrate --force` & seeder permission MySQL lokal sukses. MOD-02 dst tidak disentuh. AC-01-2/01-3/01-4/01-6 masih tertunda; AC-01-5 juga terpenuhi lewat audit before/after pada `CustomerService::update()` + feature test. |
 | 2026-11-19 | PH-01 (MOD-01) | AC-01-2 (guard pelanggan nonaktif di service) + AC-01-4 (detail pelanggan & empty state riwayat order) | `app/Models/Customer.php`, `app/Services/Customer/CustomerService.php`, `resources/views/customers/show.blade.php`, `tests/Feature/Customer/{CustomerDetailTest,CustomerSelectableForOrderTest}.php`, `PROGRESS.md` | Scope `active()` (atribut `#[Scope]`) untuk query pelanggan yang boleh dipakai order; `CustomerService::assertSelectableForOrder()` menolak pelanggan nonaktif dengan `ValidationException` (`customer_id`) — belum ada tabel/route/model order (MOD-02). Halaman detail diuji: kode, nama, tipe, telepon, WhatsApp, email, alamat, catatan, Status, bagian "Riwayat Order" + empty state; Finance boleh melihat tanpa tombol Ubah. Satu baris `Status` ditambahkan ke tabel profil agar status nonaktif terlihat eksplisit. Feature test baru: 7 kasus. `php artisan test` hijau (163/163, 653 assertion); `pint` bersih. `docs/plan/**` & MOD-02 dst tidak disentuh. Gate PH-01 tinggal demo 10 pelanggan nyata. |
 | 2026-11-19 | PH-01 (MOD-01) | AC-01-3 (pencarian & filter index) + AC-01-6 (Finance 403) + menu Pelanggan read-only untuk Produksi/Finance | `app/Http/Requests/Customer/CustomerFilterRequest.php`, `app/Services/Customer/CustomerService.php`, `app/Http/Controllers/Customer/CustomerController.php`, `resources/views/customers/index.blade.php`, `database/seeders/RolePermissionSeeder.php`, `tests/Feature/Customer/{CustomerSearchFilterTest,CustomerAccessTest,CustomerCrudTest}.php`, `tests/Feature/System/{SidebarMenuTest,RoleSeederTest}.php`, `PROGRESS.md` | Filter GET `/customers`: nama, kode, telepon (sebagian), tipe, status (`active`/`inactive`), paginasi mempertahankan query (`withQueryString`), nilai filter dipertahankan di form + tombol Reset. `menu.customer` ditambahkan untuk role Produksi & Finance (tetap `customers.view` saja) — menu tampil, tombol Tambah/route edit-create ditolak 403; Admin & Owner CRUD penuh. Feature test baru: 8 kasus filter, 4 kasus akses, 2 kasus Finance 403 (create/update/edit). Ekspektasi menu di `SidebarMenuTest` & `RoleSeederTest` diperbarui karena perubahan permission disengaja. `php artisan test` hijau (156/156, 631 assertion); `pint` bersih; `db:seed --class=RolePermissionSeeder` sukses di MySQL lokal. AC-01-2/01-4 tetap menunggu MOD-02. |
+| 2026-11-19 | PH-02 (MOD-02) | Transisi fase: fase aktif ditetapkan ke PH-02 | `PROGRESS.md` | Dicatat di awal sesi. Fokus sesi ini dibatasi skema + domain MOD-02; controller/view/route/policy/menu sengaja belum dibuat. Tidak ada file modul lain yang disentuh. |
+| 2026-11-19 | PH-02 (MOD-02) | AC-02-1, AC-02-2, AC-02-6 (domain), integritas #1 & #7, BR-14, BR-17; AC-01-2 dipakai nyata | `database/migrations/2026_11_19_130000_create_orders_table.php`, `database/migrations/2026_11_19_130100_create_order_items_table.php`, `database/migrations/2026_11_19_130200_create_item_status_histories_table.php`, `database/migrations/2026_11_19_130300_create_order_cancellations_table.php`, `app/Enums/{OrderStatus,ItemStatus,Priority,ItemCategory}.php`, `app/Models/{Order,OrderItem,ItemStatusHistory,OrderCancellation}.php`, `database/factories/{OrderFactory,OrderItemFactory,ItemStatusHistoryFactory,OrderCancellationFactory}.php`, `app/Services/Order/OrderService.php`, `tests/Feature/Order/OrderDomainTest.php`, `PROGRESS.md` | 4 tabel persis 05-data-model bagian C: uang `decimal(15,2)`, `orders.code` unik + FK `customer_id`/`created_by`/`validated_by`, `tax` default 0 dan tidak masuk rumus total, `order_items` tanpa kolom `code`. Enum nilai persis 05-data-model + `label()`; model relasi/casts/factory lengkap. `OrderService::create()` wajib `nextOrder()` (ADR-002 → `ORD-TAHUN-0001`) dan `CustomerService::assertSelectableForOrder()` (AC-01-2); total = Σ(qty × unit_price) − diskon + `delivery_fee` sekali per order (BR-14). Status item hanya lewat `changeItemStatus()` → `item_status_histories` (integritas #7); perubahan harga → `audit_logs` before/after (BR-17); hapus item hanya saat `draft` (integritas #1). `php artisan test` hijau (170/170, 693 assertion — 7 test baru); `pint` bersih; `php artisan migrate --force` sukses di MySQL lokal (`DB-sistem-reffo-2`). MOD-03 dst dan `docs/plan/**` tidak disentuh. Belum di-commit (ada perubahan `opencode.json` milik user di worktree). |
