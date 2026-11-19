@@ -30,6 +30,9 @@ use Illuminate\Validation\ValidationException;
  * - Item printing bisa punya sub-tipe mode `pcs` (produk jadi) atau `m2`
  *   (luas panjang × lebar × quantity — ADR-007 revisi UI). Mode m2 memakai
  *   luas efektif sebagai qty yang dikalikan unit_price.
+ * - Setiap item mewakili metode hitung sendiri lewat `item_type`
+ *   (`printing` → `m2`, `produk` → `pcs`, ADR-008); fallback ke mode lama
+ *   bila `item_type` tidak ada pada payload.
  * - Field layanan (printing/kirim/reklame) & alamat/tindakan disimpan lewat
  *   `order_items.specification` JSON (kolom existing, ADR-007) tanpa migrasi.
  * - Status item diubah hanya lewat changeItemStatus() agar tiap perubahan
@@ -47,7 +50,7 @@ class OrderService
     /**
      * @param  array{
      *     customer_id: int,
-     *     items: list<array{title: string, category?: ItemCategory|string|null, specification?: array|null, qty?: int|float|string, unit?: string|null, unit_price?: int|float|string, deadline_at?: mixed, priority?: Priority|string|null}>,
+     *     items: list<array{title: string, category?: ItemCategory|string|null, item_type?: string|null, specification?: array|null, qty?: int|float|string, unit?: string|null, unit_price?: int|float|string, deadline_at?: mixed, priority?: Priority|string|null}>,
      *     discount?: int|float|string,
      *     delivery_fee?: int|float|string,
      *     deadline_at?: mixed,
@@ -124,7 +127,7 @@ class OrderService
     /**
      * Tambah item hanya sebelum order divalidasi (MOD-02 "Aturan penerapan").
      *
-     * @param  array{title: string, category?: ItemCategory|string|null, specification?: array|null, qty?: int|float|string, unit?: string|null, unit_price?: int|float|string, deadline_at?: mixed, priority?: Priority|string|null}  $data
+     * @param  array{title: string, category?: ItemCategory|string|null, item_type?: string|null, specification?: array|null, qty?: int|float|string, unit?: string|null, unit_price?: int|float|string, deadline_at?: mixed, priority?: Priority|string|null}  $data
      * @param  array{ip?: string|null, user_agent?: string|null}  $meta
      */
     public function addItem(Order $order, array $data, User $actor, array $meta = []): OrderItem
@@ -582,13 +585,15 @@ class OrderService
     }
 
     /**
-     * Siapkan item sebelum disimpan ke `order_items` (BR-01, BR-02, ADR-007).
+     * Siapkan item sebelum disimpan ke `order_items` (BR-01, BR-02, ADR-007, ADR-008).
      *
      * - Mode `m2` (printing berbasis m²): luas efektif = panjang × lebar ×
      *   quantity; luas efektif menjadi qty yang dikalikan unit_price, dan
      *   panjang/lebar/quantity_asli/luas_m2 disimpan di `specification`.
      * - Mode `pcs` (produk jadi): qty = jumlah produk.
      * - Layanan & tindakan disimpan lewat `specification` JSON (existing column).
+     * - Mode ditentukan lewat `item_type` (`printing` → `m2`, `produk` → `pcs`,
+     *   ADR-008); fallback ke mode lama bila `item_type` tidak ada.
      *
      * @param  array<string, mixed>  $item
      * @param  array{services: array{printing: bool, kirim: bool, reklame: bool}, delivery_address: string, tindakan: array<int, string>}  $context
@@ -600,11 +605,13 @@ class OrderService
         $category = $this->category($item['category'] ?? null);
         $services = $context['services'];
         $deliveryAddress = $context['delivery_address'];
-        $tindakan = $context['tindakan'];
+        $tindakan = $this->resolveItemTindakan($item, $context);
 
         $specification['services'] = $services;
 
-        if ($category === ItemCategory::Printing && ($specification['mode'] ?? null) === 'm2') {
+        $mode = $this->resolveMode($item, $specification);
+
+        if ($category === ItemCategory::Printing && $mode === 'm2') {
             $luasM2 = bcmul(
                 bcmul($this->amount($specification['ukuran_panjang'] ?? 0), $this->amount($specification['ukuran_lebar'] ?? 0), 2),
                 $this->amount($specification['quantity_asli'] ?? 0),
@@ -621,14 +628,14 @@ class OrderService
                 'quantity_asli' => $this->amount($specification['quantity_asli'] ?? 0),
                 'luas_m2' => $luasM2,
                 'jenis_finishing' => $specification['jenis_finishing'] ?? null,
-                'tindakan' => $specification['tindakan'] ?? null,
+                'tindakan' => $tindakan !== [] ? $tindakan : null,
                 'services' => $services,
             ];
 
             $item['specification'] = $specification;
         }
 
-        if ($category === ItemCategory::Printing && ($specification['mode'] ?? null) === 'pcs') {
+        if ($category === ItemCategory::Printing && $mode === 'pcs') {
             $itemQty = $this->amount($item['qty'] ?? 1);
             $item['qty'] = $itemQty;
             $item['specification'] = array_merge($specification, [
@@ -647,6 +654,68 @@ class OrderService
         }
 
         return $item;
+    }
+
+    /**
+     * Tentukan mode perhitungan item (ADR-008): `item_type` `printing` → `m2`,
+     * `produk` → `pcs`; fallback ke `specification.mode` lama bila `item_type`
+     * tidak diisi (payload lama).
+     *
+     * @param  array<string, mixed>  $item
+     * @param  array<string, mixed>  $specification
+     */
+    private function resolveMode(array $item, array $specification): ?string
+    {
+        $itemType = trim((string) ($item['item_type'] ?? ''));
+
+        if ($itemType !== '') {
+            return match ($itemType) {
+                'printing' => 'm2',
+                'produk' => 'pcs',
+                default => null,
+            };
+        }
+
+        return $specification['mode'] ?? null;
+    }
+
+    /**
+     * Tindakan reklame untuk satu item (ADR-008 §4): dibaca dari
+     * `items.*.specification.tindakan`, fallback ke daftar global
+     * `reklame_actions` untuk payload lama. Hanya dipakai bila layanan
+     * Reklame aktif.
+     *
+     * @param  array<string, mixed>  $item
+     * @param  array{services: array{printing: bool, kirim: bool, reklame: bool}, delivery_address: string, tindakan: array<int, string>}  $context
+     * @return array<int, string>
+     */
+    private function resolveItemTindakan(array $item, array $context): array
+    {
+        $actions = $item['specification']['tindakan'] ?? null;
+
+        if (! is_array($actions) || $actions === []) {
+            $actions = $context['tindakan'];
+        }
+
+        $validActions = [];
+
+        foreach ($actions as $action) {
+            if ($action instanceof ActionType) {
+                $validActions[] = $action->value;
+
+                continue;
+            }
+
+            $value = trim((string) $action);
+
+            if ($value === '') {
+                continue;
+            }
+
+            $validActions[] = $value;
+        }
+
+        return array_values(array_unique($validActions));
     }
 
     /**

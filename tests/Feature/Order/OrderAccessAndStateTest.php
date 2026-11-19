@@ -383,6 +383,234 @@ class OrderAccessAndStateTest extends TestCase
     }
 
     #[Test]
+    public function it_stores_a_printing_order_with_the_meter_square_mode_from_the_item_type(): void
+    {
+        $admin = User::factory()->forRole(UserRole::Admin)->create();
+        $customer = $this->activeCustomer($admin);
+
+        $response = $this->actingAs($admin)->post(route('orders.store'), [
+            'customer_id' => $customer->id,
+            'services' => ['printing' => true],
+            'items' => [
+                [
+                    'title' => 'Banner MMT',
+                    'category' => ItemCategory::Printing->value,
+                    'item_type' => 'printing',
+                    'specification' => [
+                        'mode' => 'm2',
+                        'bahan' => 'Kain',
+                        'ukuran_panjang' => 2,
+                        'ukuran_lebar' => 1,
+                        'quantity_asli' => 2,
+                        'jenis_finishing' => 'potong',
+                    ],
+                    'qty' => 2,
+                    'unit' => 'm2',
+                    'unit_price' => 100000,
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $order = Order::query()->firstOrFail();
+        $item = $order->items->firstOrFail();
+
+        // Luas efektif = panjang (2) x lebar (1) x quantity (2) = 4 m².
+        $this->assertSame('m2', $item->specification['mode']);
+        $this->assertSame('4.00', (string) $item->qty);
+        $this->assertSame('m2', $item->unit);
+        $this->assertSame('400000.00', (string) $item->total);
+        $this->assertSame('4.00', (string) $item->specification['luas_m2']);
+        $this->assertSame('2.00', (string) $item->specification['quantity_asli']);
+    }
+
+    #[Test]
+    public function it_stores_a_produk_jadi_order_with_the_item_type_as_the_quantity(): void
+    {
+        $admin = User::factory()->forRole(UserRole::Admin)->create();
+        $customer = $this->activeCustomer($admin);
+
+        $response = $this->actingAs($admin)->post(route('orders.store'), [
+            'customer_id' => $customer->id,
+            'items' => [
+                [
+                    'title' => 'Kartu Nama',
+                    'category' => ItemCategory::Printing->value,
+                    'item_type' => 'produk',
+                    'specification' => [
+                        'mode' => 'pcs',
+                        'quantity_asli' => 3,
+                    ],
+                    'qty' => 3,
+                    'unit' => 'pcs',
+                    'unit_price' => 50000,
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $order = Order::query()->firstOrFail();
+        $item = $order->items->firstOrFail();
+
+        $this->assertSame('pcs', $item->specification['mode']);
+        $this->assertSame('3.00', (string) $item->qty);
+        $this->assertSame('pcs', $item->unit);
+        $this->assertSame('3.00', (string) $item->specification['quantity_asli']);
+        $this->assertSame('150000.00', (string) $item->total);
+    }
+
+    #[Test]
+    public function it_mixed_items_with_meter_square_and_produk_jadi_calculate_the_order_total(): void
+    {
+        $admin = User::factory()->forRole(UserRole::Admin)->create();
+        $customer = $this->activeCustomer($admin);
+
+        $response = $this->actingAs($admin)->post(route('orders.store'), [
+            'customer_id' => $customer->id,
+            'services' => ['printing' => true],
+            'discount' => 10000,
+            'delivery_fee' => 25000,
+            'items' => [
+                [
+                    'title' => 'Banner MMT',
+                    'category' => ItemCategory::Printing->value,
+                    'item_type' => 'printing',
+                    'specification' => [
+                        'mode' => 'm2',
+                        'bahan' => 'Kain',
+                        'ukuran_panjang' => 2,
+                        'ukuran_lebar' => 1,
+                        'quantity_asli' => 2,
+                    ],
+                    'qty' => 2,
+                    'unit' => 'm2',
+                    'unit_price' => 100000,
+                ],
+                [
+                    'title' => 'Kartu Nama',
+                    'category' => ItemCategory::Printing->value,
+                    'item_type' => 'produk',
+                    'specification' => [
+                        'mode' => 'pcs',
+                        'quantity_asli' => 3,
+                    ],
+                    'qty' => 3,
+                    'unit' => 'pcs',
+                    'unit_price' => 50000,
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $order = Order::query()->firstOrFail();
+
+        // Item m²: luas = 2 x 1 x 2 = 4 m² → 4 x 100000 = 400000.
+        // Item pcs: 3 x 50000 = 150000. Subtotal = 550000.
+        $this->assertSame('550000.00', (string) $order->subtotal);
+        $this->assertSame('10000.00', (string) $order->discount);
+        $this->assertSame('25000.00', (string) $order->delivery_fee);
+        $this->assertSame('565000.00', (string) $order->total);
+    }
+
+    #[Test]
+    public function it_stores_the_reklame_action_from_the_item_specification(): void
+    {
+        $admin = User::factory()->forRole(UserRole::Admin)->create();
+        $customer = $this->activeCustomer($admin);
+
+        $response = $this->actingAs($admin)->post(route('orders.store'), [
+            'customer_id' => $customer->id,
+            'services' => ['reklame' => true],
+            'items' => [
+                [
+                    'title' => 'Spanduk Reklame A',
+                    'category' => ItemCategory::Reklame->value,
+                    'item_type' => 'produk',
+                    'qty' => 2,
+                    'unit' => 'pcs',
+                    'unit_price' => 80000,
+                    'specification' => [
+                        'mode' => 'pcs',
+                        'tindakan' => ['konstruksi_rangka'],
+                    ],
+                ],
+                [
+                    'title' => 'Spanduk Reklame B',
+                    'category' => ItemCategory::Reklame->value,
+                    'item_type' => 'produk',
+                    'qty' => 1,
+                    'unit' => 'pcs',
+                    'unit_price' => 80000,
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $order = Order::query()->firstOrFail();
+        $itemA = $order->items()->where('title', 'Spanduk Reklame A')->firstOrFail();
+        $itemB = $order->items()->where('title', 'Spanduk Reklame B')->firstOrFail();
+
+        $this->assertSame(['konstruksi_rangka'], $itemA->specification['tindakan']);
+        $this->assertArrayNotHasKey('tindakan', $itemB->specification ?? []);
+    }
+
+    #[Test]
+    public function it_rejects_an_item_type_printing_without_a_valid_meter_square_specification(): void
+    {
+        $admin = User::factory()->forRole(UserRole::Admin)->create();
+        $customer = $this->activeCustomer($admin);
+
+        $response = $this->actingAs($admin)->post(route('orders.store'), [
+            'customer_id' => $customer->id,
+            'items' => [
+                [
+                    'title' => 'Banner MMT',
+                    'category' => ItemCategory::Printing->value,
+                    'item_type' => 'printing',
+                    'specification' => [
+                        'mode' => 'm2',
+                        'quantity_asli' => 2,
+                    ],
+                    'qty' => 2,
+                    'unit' => 'm2',
+                    'unit_price' => 100000,
+                ],
+            ],
+        ]);
+
+        $response->assertSessionHasErrors('items.0.specification.ukuran_panjang');
+        $response->assertSessionHasErrors('items.0.specification.ukuran_lebar');
+        $this->assertSame(0, Order::query()->count());
+    }
+
+    #[Test]
+    public function it_rejects_a_reklame_action_when_the_reklame_service_is_not_checked(): void
+    {
+        $admin = User::factory()->forRole(UserRole::Admin)->create();
+        $customer = $this->activeCustomer($admin);
+
+        $response = $this->actingAs($admin)->post(route('orders.store'), [
+            'customer_id' => $customer->id,
+            'items' => [
+                [
+                    'title' => 'Spanduk Reklame',
+                    'category' => ItemCategory::Reklame->value,
+                    'item_type' => 'produk',
+                    'qty' => 1,
+                    'unit' => 'pcs',
+                    'unit_price' => 80000,
+                    'specification' => [
+                        'tindakan' => ['konstruksi_rangka'],
+                    ],
+                ],
+            ],
+        ]);
+
+        $response->assertSessionHasErrors('items.0.specification.tindakan');
+        $this->assertSame(0, Order::query()->count());
+    }
+
+    #[Test]
     public function it_stores_the_delivery_address_when_the_kirim_service_is_checked(): void
     {
         $admin = User::factory()->forRole(UserRole::Admin)->create();
@@ -558,5 +786,156 @@ class OrderAccessAndStateTest extends TestCase
         $this->assertSame(1, $order->items()->count());
         $this->assertSame('10000.00', (string) $item->total);
         $this->assertNull($item->specification);
+    }
+
+    #[Test]
+    public function it_displays_mixed_item_specifications_and_billed_area_when_order_contains_m2_and_pcs_items(): void
+    {
+        $admin = User::factory()->forRole(UserRole::Admin)->create();
+        $customer = $this->activeCustomer($admin);
+
+        $response = $this->actingAs($admin)->post(route('orders.store'), [
+            'customer_id' => $customer->id,
+            'services' => ['printing' => true],
+            'items' => [
+                [
+                    'title' => 'Banner MMT',
+                    'category' => ItemCategory::Printing->value,
+                    'item_type' => 'printing',
+                    'specification' => [
+                        'mode' => 'm2',
+                        'bahan' => 'Kain',
+                        'ukuran_panjang' => 2,
+                        'ukuran_lebar' => 1,
+                        'quantity_asli' => 3,
+                        'jenis_finishing' => 'potong',
+                    ],
+                    'qty' => 6,
+                    'unit' => 'm2',
+                    'unit_price' => 100000,
+                ],
+                [
+                    'title' => 'Kartu Nama',
+                    'category' => ItemCategory::Printing->value,
+                    'item_type' => 'produk',
+                    'specification' => [
+                        'mode' => 'pcs',
+                        'quantity_asli' => 2,
+                    ],
+                    'qty' => 2,
+                    'unit' => 'pcs',
+                    'unit_price' => 50000,
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $order = Order::query()->firstOrFail();
+
+        $showResponse = $this->actingAs($admin)->get(route('orders.show', $order));
+        $showResponse->assertOk();
+        $showResponse->assertSee('Ukuran:');
+        $showResponse->assertSee('Jumlah: 3 lembar');
+
+        // Setelah ADR-008, Qty dan Satuan ditampilkan pada kolom terpisah,
+        // sehingga string kontigu '6 m²' tidak lagi ada di HTML. Verifikasi
+        // sel Qty dan sel Satuan secara terpisah via DOM.
+        $document = new \DOMDocument;
+        libxml_use_internal_errors(true);
+        $document->loadHTML($showResponse->getContent());
+        libxml_clear_errors();
+        $xpath = new \DOMXPath($document);
+
+        $hasMixedQtyAndUnit = false;
+        foreach ($xpath->query('//tr') as $row) {
+            $cells = [];
+            foreach ($xpath->query('./td', $row) as $cell) {
+                $cells[] = trim($cell->textContent);
+            }
+            if (count($cells) < 2) {
+                continue;
+            }
+            for ($i = 0; $i < count($cells) - 1; $i++) {
+                if ($cells[$i] === '6' && $cells[$i + 1] === 'm²') {
+                    $hasMixedQtyAndUnit = true;
+                }
+            }
+        }
+        $this->assertTrue($hasMixedQtyAndUnit, 'Qty cell 6 and Satuan cell m² not found as adjacent cells');
+
+        $hasPcsUnit = false;
+        foreach ($xpath->query('//tr') as $row) {
+            $cells = [];
+            foreach ($xpath->query('./td', $row) as $cell) {
+                $cells[] = trim($cell->textContent);
+            }
+            if (count($cells) < 2) {
+                continue;
+            }
+            for ($i = 0; $i < count($cells) - 1; $i++) {
+                if ($cells[$i] === '2' && $cells[$i + 1] === 'pcs') {
+                    $hasPcsUnit = true;
+                }
+            }
+        }
+        $this->assertTrue($hasPcsUnit, 'Qty cell 2 and Satuan cell pcs not found as adjacent cells');
+
+        $pdfResponse = $this->actingAs($admin)->get(route('orders.pdf', $order));
+        $pdfResponse->assertOk();
+        $pdfResponse->assertDownload($order->code.'.pdf');
+
+        $content = $this->decodedContent($pdfResponse->baseResponse->getContent());
+
+        $this->assertStringContainsString('Ukuran:', $content);
+        $this->assertStringContainsString('Jumlah: 3 lembar', $content);
+        $this->assertStringContainsString('[(6)]', $content);
+        $this->assertStringContainsString('[(m²)]', $content);
+    }
+
+    #[Test]
+    public function it_displays_a_dash_for_items_without_specification_and_keeps_the_previous_flow(): void
+    {
+        $admin = User::factory()->forRole(UserRole::Admin)->create();
+        $customer = $this->activeCustomer($admin);
+
+        $response = $this->actingAs($admin)->post(route('orders.store'), [
+            'customer_id' => $customer->id,
+            'items' => [
+                [
+                    'title' => 'Item Lama',
+                    'category' => ItemCategory::Printing->value,
+                    'qty' => 2,
+                    'unit' => 'pcs',
+                    'unit_price' => 50000,
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $order = Order::query()->firstOrFail();
+
+        $this->actingAs($admin)
+            ->get(route('orders.show', $order))
+            ->assertOk()
+            ->assertSee('Item Lama');
+
+        $pdfResponse = $this->actingAs($admin)->get(route('orders.pdf', $order));
+        $pdfResponse->assertOk();
+        $pdfResponse->assertDownload($order->code.'.pdf');
+    }
+
+    private function decodedContent(string $pdf): string
+    {
+        if (preg_match_all('/stream\r?\n(.*?)\r?\nendstream/s', $pdf, $matches) === 0) {
+            return $pdf;
+        }
+
+        $decoded = '';
+        foreach ($matches[1] as $stream) {
+            $plain = @gzuncompress($stream);
+            $decoded .= $plain === false ? $stream : mb_convert_encoding($plain, 'UTF-8', 'Windows-1252');
+        }
+
+        return $decoded;
     }
 }

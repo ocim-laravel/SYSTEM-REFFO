@@ -8,7 +8,7 @@
 ## FASE AKTIF
 
 **PH-02 â€” ADMIN & ORDER**
-Status: **SELESAI + PENYEMPURNAAN UI MENUNGGU IMPLEMENTASI** *(gate PH-02 disetujui Owner 19 November 2026; AC-02-9...AC-02-10 ditambahkan melalui ADR-008)*
+Status: **SELESAI + PENYEMPURNAAN (UI ADR-007 selesai; backend order campur ADR-008 selesai)** *(gate PH-02 disetujui Owner 19 November 2026; AC-02-9...AC-02-10 ditambahkan melalui ADR-008)*
 Estimasi: Minggu 9â€“13
 Modul: MOD-02 (Admin & Order)
 Sesi ini: **AC-02-7 â€” guard item ACC (BR-05)** + **data demo gate PH-02** (1 pelanggan + 1 order 4 item, kode `ORD-2026-0001`). AC-02-8 (PDF) selesai di sesi sebelumnya.
@@ -22,6 +22,8 @@ Sesi ini: **AC-02-7 â€” guard item ACC (BR-05)** + **data demo gate PH-02**
 - [x] **AC-02-5** Pembatalan menyimpan alasan, biaya aktual, dan nilai kesepakatan terpisah (BR-15) *(`OrderService::cancel()` + `POST /orders/{order}/cancel`, form, audit `order.cancelled` before/after BR-17; feature test)*
 - [x] **AC-02-7** Item yang sudah `acc` tidak bisa diubah tanpa Change Request (BR-05) *(`OrderService::assertItemMutable()` â†’ `ValidationException` key `item`; dipanggil di `updateItemPrice()`, `deleteItem()`, `changeItemStatus()` kecuali status sama; bypass CR disusul MOD-03; feature test)*
 - [x] **AC-02-8** PDF ringkasan order memuat pelanggan, item, total, deadline *(ADR-006: `barryvdh/laravel-dompdf`, Blade view PDF, `OrderController::exportPdf()`, route `orders.pdf`, tombol di detail, otorisasi `orders.view`; feature test)*
+- [x] **AC-02-9** Order campuran pcs/m²: satu order boleh mencampur item Produk/Produk Jadi (pcs) dan Printing (m²); ringkasan sebelum proses menampilkan pelanggan, layanan, item, subtotal otomatis, diskon editable, biaya kirim editable, total akhir (ADR-008) *(backend `StoreOrderRequest`/`OrderService::create()`; form create + ringkasan; feature test)*
+- [x] **AC-02-10** Nota menampilkan quantity asli serta luas tagihan item m²: Kolom Qty = angka saja, Kolom Satuan = m²/pcs (ADR-008) *(show.blade.php & pdf.blade.php; feature test)*
 
 ### JANGAN DISENTUH di PH-02
 - MOD-03 (desain), MOD-04 (produksi), MOD-05 (finishing)
@@ -31,7 +33,7 @@ Sesi ini: **AC-02-7 â€” guard item ACC (BR-05)** + **data demo gate PH-02**
 ### Kriteria selesai PH-02 (gate)
 - [x] AC-02-1 â€¦ AC-02-8 lulus (lihat `docs/plan/modules/MOD-02-order.md`) â€” AC-02-1 s.d. AC-02-8 lulus (AC-02-7 = guard ACC tanpa bypass; bypass Change Request menyusul di MOD-03)
 - [x] Demo 1 order 4 item (campur printing & reklame) sampai antrean desain **lulus** â€” `ORD-2026-0001` divalidasi Admin â†’ semua item `queued_design`; PDF diunduh dan dicek; Designer/Owner 403 validasi. Gate PH-02 **disetujui Owner, 19 November 2026**.
-- [x] `php artisan test` hijau & `pint` bersih *(200 test / 869 assertion setelah data demo gate)*
+- [x] `php artisan test` hijau & `pint` bersih *(217 test / 956 assertion — finalisasi ADR-008)*
 
 ### Data demo gate PH-02 (disiapkan 19 November 2026)
 - Pelanggan: **PT Demo Gate PH-02** â€” `CUS-2026-0012`, perusahaan, telepon `081299988877`, alamat `Jl. Demo Gate No. 1, Bandung`.
@@ -67,6 +69,12 @@ Sesi ini: **AC-02-7 â€” guard item ACC (BR-05)** + **data demo gate PH-02**
 - **Status:** USULAN PERUBAHAN disetujui - siap dikerjakan sebagai sesi revisi MOD-02.
 - **Catatan sesi revisi MOD-02 (20 November 2026):** revisi UI terimplementasi — link "Tambah Pelanggan" (`target="_blank"`), checkbox layanan `printing`/`kirim`/`reklame`, alamat kirim (jika `kirim` → sebelum catatan), sub-tipe printing `pcs`/`m2` + luas efektif, tindakan reklame, diskon di ringkasan setelah subtotal, preview subtotal/total. Storage layanan/alamat/tindakan memakai `order_items.specification` JSON (existing column, tanpa migrasi). Enum baru `FinishingType` & `ActionType` dibuat. `php artisan test` hijau (209/209, 912 assertion), `pint` bersih. Commit `6a2d60c`.
 - **Revisi lanjutan disetujui Owner (20 November 2026, ADR-008):** satu order boleh mencampur item Produk/Produk Jadi (pcs) dan Printing (m²); ringkasan sebelum proses menampilkan pelanggan, layanan, item, subtotal otomatis, diskon editable, biaya kirim editable, dan total akhir; nota menampilkan quantity asli serta luas tagihan item m². Penyempurnaan dijadwalkan pada minggu 13; PH-03 bergeser ke minggu 14–17.
+
+### Keputusan implementasi ADR-008 — **disetujui Owner, 20 November 2026**
+- Backend: `StoreOrderRequest` (`items.*.item_type` printing→m2/produk→pcs) + `OrderService::create()` menghitung qty penagihan m² dari panjang × lebar × quantity asli (tanpa migrasi).
+- Form create + ringkasan sebelum proses (pelanggan, layanan, item, subtotal otomatis, diskon & biaya kirim editable, total akhir) selesai.
+- Finalisasi nota (20 November 2026): `show.blade.php` & `pdf.blade.php` — Kolom Qty = angka saja; Kolom Satuan = m²/pcs; Spesifikasi m² tetap `Ukuran: … m × … m, Jumlah: … lembar`; Spesifikasi pcs `Paket Produk Jadi`.
+- AC-02-9 & AC-02-10 ditandai selesai; `php artisan test` 217/217 (956 assertion), `pint` bersih.
 
 ---
 
@@ -129,6 +137,8 @@ Sesi ini: **AC-02-7 â€” guard item ACC (BR-05)** + **data demo gate PH-02**
 
 | Tanggal | Fase | ID selesai | File diubah | Catatan |
 |---|---|---|---|---|
+| 2026-11-20 | PH-02 (MOD-02) | Finalisasi ADR-008 (nota) + commit ADR-008 | `resources/views/orders/show.blade.php`, `resources/views/orders/pdf.blade.php`, `PROGRESS.md` (+ backend/form/ringkasan/test sebelumnya) | Finalisasi format nota: Kolom Qty = angka saja; Kolom Satuan = m²/pcs; Spesifikasi m² tetap `Ukuran: … m × … m, Jumlah: … lembar`; Spesifikasi pcs `Paket Produk Jadi`. AC-02-9 & AC-02-10 ditandai selesai. `php artisan test` hijau (217/217, 956 assertion), `pint` bersih. Commit `feat(MOD-02): order campuran pcs/m2 dan ringkasan proses [AC-02-9][AC-02-10]`. |
+| 2026-11-20 | PH-02 (MOD-02) | Backend revisi order campur pcs/m² + ringkasan (ADR-008 backend) | `app/Http/Requests/Order/StoreOrderRequest.php`, `app/Services/Order/OrderService.php`, `tests/Feature/Order/OrderAccessAndStateTest.php`, `PROGRESS.md` | Sesi backend ADR-008: `items.*.item_type` (`printing`→`m2`, `produk`→`pcs`, nullable/fallback mode lama), mode m2 = panjang × lebar × quantity_asli → qty penagihan (`luas_m2` disimpan di `specification`), mode pcs → qty = quantity (`quantity_asli` = qty). Tindakan reklame dari `items.*.specification.tindakan` (per item, fallback legacy global) + hanya saat layanan Reklame. Validasi: printing→m2 wajib panjang/lebar/quantity positif; produk→pcs. Tanpa migrasi, tanpa perubahan rumus total/state machine/UI/MOD-03. Test baru 6; `php artisan test` hijau (215/215, 941 assertion); `pint --dirty` bersih. Belum di-commit. |
 | 2026-11-20 | PH-02 (MOD-02) | Revisi UI ADR-007 (sesi revisi MOD-02) | `resources/views/orders/create.blade.php`, `app/Http/Requests/Order/StoreOrderRequest.php`, `app/Services/Order/OrderService.php`, `app/Enums/{FinishingType,ActionType}.php` (baru), `tests/Feature/Order/OrderAccessAndStateTest.php`, `PROGRESS.md` | Sesi revisi UI MOD-02 per ADR-007: link "Tambah Pelanggan" (`/customers/create`, `target="_blank"`), checkbox layanan `printing`/`kirim`/`reklame`, field alamat (jika `kirim` → sebelum catatan, tersembunyi & tidak dikirim bila tidak dicentang), sub-tipe printing `pcs`/`m2` + luas efektif (panjang × lebar × quantity → qty × unit_price, simpan di `specification`), tindakan reklame, diskon di ringkasan setelah subtotal, preview subtotal/total. Storage via `order_items.specification` JSON existing (tanpa migrasi). Enum baru `FinishingType` & `ActionType`. Test baru: 7 test. `php artisan test` hijau (209/209, 912 assertion); `pint --dirty` bersih. Commit `6a2d60c`. |
 | 2026-11-18 | PH-00 (MOD-10) | AC-10-1 (parsial: login/logout, tolak user nonaktif, feature test) | `app/Http/Controllers/Auth/LoginController.php`, `app/Models/User.php`, `database/factories/UserFactory.php`, `database/seeders/UserSeeder.php`, `database/migrations/2026_11_18_124512_add_is_active_to_users_table.php`, `tests/Feature/Auth/LoginTest.php`, `tests/Feature/ExampleTest.php`, `app/Events/RealtimeNotification.php`, `app/Http/Middleware/EnsureUserHasRole.php`, `bootstrap/app.php`, `PROGRESS.md` | Migrasi & seeder dijalankan (MySQL `DB-sistem-reffo-2`); `php artisan test` hijau (8/27); `pint` bersih. Reset/ubah password wajib, 7 role/permission, audit log, kalender kerja, dsb. masih tertunda. |
 | 2026-11-18 | PH-00 (MOD-10) | AC-10-1 (sisa: reset password, ubah password wajib, rate limit login, audit login BR-17) | `app/Http/Controllers/Auth/LoginController.php`, `app/Http/Controllers/Auth/PasswordResetController.php`, `app/Http/Controllers/Auth/PasswordChangeController.php`, `app/Http/Requests/Auth/*.php`, `app/Http/Middleware/EnsurePasswordIsChanged.php`, `app/Models/AuditLog.php`, `app/Models/User.php`, `app/Services/System/AuditLogService.php`, `database/migrations/2026_11_18_130000_add_must_change_password_to_users_table.php`, `database/migrations/2026_11_18_130100_create_audit_logs_table.php`, `database/factories/UserFactory.php`, `routes/web.php`, `bootstrap/app.php`, `resources/views/auth/*.blade.php`, `resources/views/layouts/app.blade.php`, `tests/Feature/Auth/LoginSecurityTest.php`, `tests/Feature/Auth/PasswordResetTest.php`, `tests/Feature/Auth/PasswordChangeTest.php`, `PROGRESS.md` | `php artisan test` hijau (21/21); `pint` bersih; migrasi dijalankan. Role/permission/divisi tidak disentuh. Sisa PH-00: AC-10-2 â€¦ AC-10-7. |

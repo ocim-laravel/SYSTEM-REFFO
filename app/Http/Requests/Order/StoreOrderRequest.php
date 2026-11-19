@@ -43,6 +43,7 @@ class StoreOrderRequest extends FormRequest
             'items' => ['required', 'array', 'min:1'],
             'items.*.title' => ['required', 'string', 'max:255'],
             'items.*.category' => ['required', Rule::enum(ItemCategory::class)],
+            'items.*.item_type' => ['nullable', Rule::in(['printing', 'produk'])],
             'items.*.specification' => ['nullable', 'array'],
             'items.*.specification.mode' => ['nullable', Rule::in(['pcs', 'm2'])],
             'items.*.specification.bahan' => ['nullable', 'string', 'max:255'],
@@ -75,7 +76,8 @@ class StoreOrderRequest extends FormRequest
     /**
      * Validasi lintas field layanan: alamat hanya untuk order dengan layanan
      * Kirim; tindakan hanya untuk order dengan layanan Reklame; field wajib
-     * mode m² harus valid (BR-03, ADR-007 §2–§5).
+     * mode m² harus valid (BR-03, ADR-007 §2–§5); mode per item ditentukan lewat
+     * `item_type` (ADR-008).
      */
     public function withValidator(Validator $validator): void
     {
@@ -96,20 +98,50 @@ class StoreOrderRequest extends FormRequest
             }
 
             foreach ($this->input('items', []) as $index => $item) {
-                $specification = $item['specification'] ?? null;
+                $mode = $this->resolveMode($item);
 
-                if (! is_array($specification) || ($specification['mode'] ?? null) !== 'm2') {
-                    continue;
+                if ($mode === 'm2') {
+                    $specification = is_array($item['specification'] ?? null) ? $item['specification'] : [];
+
+                    foreach (['ukuran_panjang', 'ukuran_lebar', 'quantity_asli'] as $field) {
+                        $value = $specification[$field] ?? null;
+
+                        if ($value === null || $value === '' || (is_numeric($value) && (float) $value <= 0)) {
+                            $validator->errors()->add("items.{$index}.specification.{$field}", 'Item mode m² wajib memiliki panjang, lebar, dan quantity yang valid.');
+                        }
+                    }
                 }
 
-                foreach (['ukuran_panjang', 'ukuran_lebar', 'quantity_asli'] as $field) {
-                    $value = $specification[$field] ?? null;
+                $tindakan = $item['specification']['tindakan'] ?? null;
 
-                    if ($value === null || $value === '' || (is_numeric($value) && (float) $value <= 0)) {
-                        $validator->errors()->add("items.{$index}.specification.{$field}", 'Item mode m² wajib memiliki panjang, lebar, dan quantity yang valid.');
-                    }
+                if (is_array($tindakan) && ! $reklame && array_values(array_filter($tindakan, fn ($action) => (bool) $action)) !== []) {
+                    $validator->errors()->add("items.{$index}.specification.tindakan", 'Tindakan hanya dapat dipilih ketika layanan Reklame dipilih.');
                 }
             }
         });
+    }
+
+    /**
+     * Mode perhitungan item (ADR-008): `item_type` `printing` → `m2`,
+     * `produk` → `pcs`; fallback ke `specification.mode` lama bila
+     * `item_type` tidak diisi (payload lama).
+     *
+     * @param  array<string, mixed>  $item
+     */
+    private function resolveMode(array $item): ?string
+    {
+        $itemType = $item['item_type'] ?? null;
+
+        if ($itemType !== null && $itemType !== '') {
+            return match ($itemType) {
+                'printing' => 'm2',
+                'produk' => 'pcs',
+                default => null,
+            };
+        }
+
+        $specification = is_array($item['specification'] ?? null) ? $item['specification'] : [];
+
+        return $specification['mode'] ?? null;
     }
 }

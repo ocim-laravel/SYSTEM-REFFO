@@ -68,7 +68,9 @@
                 <th>#</th>
                 <th>Judul</th>
                 <th>Kategori</th>
+                <th>Spesifikasi</th>
                 <th>Qty</th>
+                <th>Satuan</th>
                 <th>Harga Satuan</th>
                 <th>Total</th>
                 <th>Prioritas</th>
@@ -78,11 +80,54 @@
         </thead>
         <tbody>
             @forelse ($order->items as $item)
+                @php
+                    $itemSpec = $item->specification;
+                    $specMode = is_array($itemSpec) ? (string) ($itemSpec['mode'] ?? '') : '';
+                    $specTindakan = is_array($itemSpec) ? ($itemSpec['tindakan'] ?? null) : null;
+                    $tindakanLabels = [];
+                    foreach ((array) $specTindakan as $action) {
+                        $action = trim((string) $action);
+
+                        if ($action === '') {
+                            continue;
+                        }
+
+                        $tindakanLabels[] = App\Enums\ActionType::from($action)->label();
+                    }
+                    $specText = '-';
+                    if ($specMode === 'm2') {
+                        $specText = 'Ukuran: '.(float) ($itemSpec['ukuran_panjang'] ?? 0).' m × '.(float) ($itemSpec['ukuran_lebar'] ?? 0).' m, Jumlah: '.(float) ($itemSpec['quantity_asli'] ?? 0).' lembar';
+                    } elseif ($specMode === 'pcs') {
+                        $specText = 'Paket Produk Jadi';
+                    }
+
+                    if ($tindakanLabels !== []) {
+                        $specText .= ', Tindakan: '.implode(', ', $tindakanLabels);
+                    }
+
+                    $luasTagihan = (string) ((float) ($itemSpec['luas_m2'] ?? 0));
+                @endphp
                 <tr>
                     <td>{{ $item->seq }}</td>
                     <td>{{ $item->title }}</td>
                     <td>{{ $item->category->label() }}</td>
-                    <td>{{ rtrim(rtrim(number_format((float) $item->qty, 2, ',', '.'), '0'), ',') }} {{ $item->unit }}</td>
+                    <td>{{ $specText }}</td>
+                    <td>
+                        @if ($specMode === 'm2')
+                            {{ rtrim(rtrim(number_format((float) $luasTagihan, 2, ',', '.'), '0'), ',') }}
+                        @else
+                            {{ rtrim(rtrim(number_format((float) $item->qty, 2, ',', '.'), '0'), ',') }}
+                        @endif
+                    </td>
+                    <td>
+                        @if ($specMode === 'm2')
+                            m²
+                        @elseif ($specMode === 'pcs')
+                            pcs
+                        @else
+                            {{ $item->unit === 'm2' ? 'm²' : ($item->unit ?: '-') }}
+                        @endif
+                    </td>
                     <td>Rp {{ number_format((float) $item->unit_price, 2, ',', '.') }}</td>
                     <td>Rp {{ number_format((float) $item->total, 2, ',', '.') }}</td>
                     <td>{{ $item->priority->label() }}</td>
@@ -90,7 +135,7 @@
                     <td>{{ $item->status->label() }}</td>
                 </tr>
             @empty
-                <tr><td colspan="9" class="muted">Belum ada item.</td></tr>
+                <tr><td colspan="11" class="muted">Belum ada item.</td></tr>
             @endforelse
         </tbody>
     </table>
