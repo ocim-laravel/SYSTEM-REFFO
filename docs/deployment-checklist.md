@@ -5,6 +5,7 @@
 
 ## A. Keamanan & akun
 - [ ] Akun demo (`reffo12345` × 7) **tidak** ada di database production (UserSeeder otomatis skip di non-local).
+- [ ] Pelanggan contoh gate demo (`CUS-2026-0002` … `CUS-2026-0011`, plus `CUS-2026-0001` "Damar Ahmad" sisa uji lama) dihapus atau diganti data nyata. Hapus hanya oleh Owner + alasan (`customers.delete`). Catatan: menghapus pelanggan **tidak** mengembalikan nomor urut — pelanggan nyata pertama tetap `CUS-2026-0012` (nomor tidak dipakai ulang, ADR-002).
 - [ ] Akun `operator@reffo.test` lama (id 2, nonaktif) dihapus manual.
 - [ ] Password `Owner` diganti dari default; `must_change_password` diset `true` untuk akun buatan admin.
 - [ ] Role & permission final sesuai kebutuhan (tidak ada role sementara).

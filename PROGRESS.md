@@ -8,7 +8,7 @@
 ## FASE AKTIF
 
 **PH-02 — ADMIN & ORDER**
-Status: **BERJALAN** *(fase aktif ditetapkan awal sesi; kode PH-01 selesai, demo manual 10 pelanggan nyata masih tercatat di arsip)*
+Status: **BERJALAN** *(fase aktif ditetapkan awal sesi; gate PH-01 disetujui Owner 19 November 2026 — lihat arsip PH-01)*
 Estimasi: Minggu 9–12
 Modul: MOD-02 (Admin & Order)
 Sesi ini: **skema + domain saja** — belum controller, view, route, policy, atau menu.
@@ -38,8 +38,14 @@ Sesi ini: **skema + domain saja** — belum controller, view, route, policy, ata
 
 ### Arsip PH-01 — ringkasan (fase sebelumnya)
 - [x] AC-01-1 … AC-01-6 selesai (lihat `docs/plan/modules/MOD-01-customer.md`)
-- [ ] Demo 10 pelanggan nyata belum dicatat
+- [x] Gate PH-01 **disetujui Owner, 19 November 2026** — dry-run 10 pelanggan + pencarian/filter + Finance 403 lulus (lihat log sesi)
+- [ ] Data pelanggan **nyata** belum dimasukkan — 10 pelanggan contoh masih ada di DB (`CUS-2026-0002` … `CUS-2026-0011`, plus `CUS-2026-0001` "Damar Ahmad" sisa uji lama). Dicatat di `docs/deployment-checklist.md` bagian A.
 - Catatan: `CustomerService::assertSelectableForOrder()` (AC-01-2) kini dipakai nyata oleh `OrderService::create()` — pelanggan nonaktif ditolak saat order dibuat.
+
+### Keputusan implementasi PH-02 (menunggu konfirmasi Owner)
+- `orders.customer_id` memakai `constrained()` (RESTRICT): pelanggan yang sudah punya order **tidak bisa dihapus permanen**. Rekomendasi: terima (melindungi riwayat order).
+- `order_items.qty` memakai `decimal(15,2)` agar bisa menerima `12,5 m²` untuk reklame. Rekomendasi: terima.
+- `orders.tax` dibuat `default 0` dan **tidak** masuk rumus total (sesuai MOD-02 "Aturan penerapan").
 
 ---
 
@@ -79,7 +85,7 @@ Sesi ini: **skema + domain saja** — belum controller, view, route, policy, ata
 | Fase | Divisi | Modul | Status |
 |---|---|---|---|
 | PH-00 | Fondasi Sistem | MOD-10 | Selesai (gate disetujui Owner 2026-11-19) |
-| PH-01 | Pelanggan (CRM) | MOD-01 | Selesai (AC-01-1…AC-01-6; demo 10 pelanggan nyata tersisa) |
+| PH-01 | Pelanggan (CRM) | MOD-01 | Selesai (gate disetujui Owner 2026-11-19; AC-01-1…AC-01-6) |
 | PH-02 | Admin & Order | MOD-02 | **AKTIF** (skema + domain: AC-02-1, AC-02-2, AC-02-6 domain) |
 | PH-03 | Designer | MOD-03 | Menunggu |
 | PH-04 | Operator / Printing | MOD-04 | Menunggu |
@@ -112,3 +118,5 @@ Sesi ini: **skema + domain saja** — belum controller, view, route, policy, ata
 | 2026-11-19 | PH-01 (MOD-01) | AC-01-3 (pencarian & filter index) + AC-01-6 (Finance 403) + menu Pelanggan read-only untuk Produksi/Finance | `app/Http/Requests/Customer/CustomerFilterRequest.php`, `app/Services/Customer/CustomerService.php`, `app/Http/Controllers/Customer/CustomerController.php`, `resources/views/customers/index.blade.php`, `database/seeders/RolePermissionSeeder.php`, `tests/Feature/Customer/{CustomerSearchFilterTest,CustomerAccessTest,CustomerCrudTest}.php`, `tests/Feature/System/{SidebarMenuTest,RoleSeederTest}.php`, `PROGRESS.md` | Filter GET `/customers`: nama, kode, telepon (sebagian), tipe, status (`active`/`inactive`), paginasi mempertahankan query (`withQueryString`), nilai filter dipertahankan di form + tombol Reset. `menu.customer` ditambahkan untuk role Produksi & Finance (tetap `customers.view` saja) — menu tampil, tombol Tambah/route edit-create ditolak 403; Admin & Owner CRUD penuh. Feature test baru: 8 kasus filter, 4 kasus akses, 2 kasus Finance 403 (create/update/edit). Ekspektasi menu di `SidebarMenuTest` & `RoleSeederTest` diperbarui karena perubahan permission disengaja. `php artisan test` hijau (156/156, 631 assertion); `pint` bersih; `db:seed --class=RolePermissionSeeder` sukses di MySQL lokal. AC-01-2/01-4 tetap menunggu MOD-02. |
 | 2026-11-19 | PH-02 (MOD-02) | Transisi fase: fase aktif ditetapkan ke PH-02 | `PROGRESS.md` | Dicatat di awal sesi. Fokus sesi ini dibatasi skema + domain MOD-02; controller/view/route/policy/menu sengaja belum dibuat. Tidak ada file modul lain yang disentuh. |
 | 2026-11-19 | PH-02 (MOD-02) | AC-02-1, AC-02-2, AC-02-6 (domain), integritas #1 & #7, BR-14, BR-17; AC-01-2 dipakai nyata | `database/migrations/2026_11_19_130000_create_orders_table.php`, `database/migrations/2026_11_19_130100_create_order_items_table.php`, `database/migrations/2026_11_19_130200_create_item_status_histories_table.php`, `database/migrations/2026_11_19_130300_create_order_cancellations_table.php`, `app/Enums/{OrderStatus,ItemStatus,Priority,ItemCategory}.php`, `app/Models/{Order,OrderItem,ItemStatusHistory,OrderCancellation}.php`, `database/factories/{OrderFactory,OrderItemFactory,ItemStatusHistoryFactory,OrderCancellationFactory}.php`, `app/Services/Order/OrderService.php`, `tests/Feature/Order/OrderDomainTest.php`, `PROGRESS.md` | 4 tabel persis 05-data-model bagian C: uang `decimal(15,2)`, `orders.code` unik + FK `customer_id`/`created_by`/`validated_by`, `tax` default 0 dan tidak masuk rumus total, `order_items` tanpa kolom `code`. Enum nilai persis 05-data-model + `label()`; model relasi/casts/factory lengkap. `OrderService::create()` wajib `nextOrder()` (ADR-002 → `ORD-TAHUN-0001`) dan `CustomerService::assertSelectableForOrder()` (AC-01-2); total = Σ(qty × unit_price) − diskon + `delivery_fee` sekali per order (BR-14). Status item hanya lewat `changeItemStatus()` → `item_status_histories` (integritas #7); perubahan harga → `audit_logs` before/after (BR-17); hapus item hanya saat `draft` (integritas #1). `php artisan test` hijau (170/170, 693 assertion — 7 test baru); `pint` bersih; `php artisan migrate --force` sukses di MySQL lokal (`DB-sistem-reffo-2`). MOD-03 dst dan `docs/plan/**` tidak disentuh. Belum di-commit (ada perubahan `opencode.json` milik user di worktree). |
+| 2026-11-19 | PH-01 (MOD-01) | Gate PH-01 disetujui Owner | `PROGRESS.md`, `docs/deployment-checklist.md` | Persetujuan gate dicatat setelah dry-run lulus: 10 pelanggan contoh didaftarkan (kode `CUS-2026-0002`…`CUS-2026-0011`; `CUS-2026-0001` "Damar Ahmad" sisa uji lama), pencarian nama/kode/telepon + filter tipe/status lulus, Finance 403 di create/edit/store, audit `customer.created`=11 & `customer.updated`=1. Data pelanggan **nyata** menyusul sebelum go-live (dicatat di `docs/deployment-checklist.md` bagian A). Tidak ada kode yang berubah. |
+| 2026-11-19 | PH-02 (MOD-02) | Commit skema + domain sesi 1 | `git` (`1bdf4bf`, `9a47d84`) | Pekerjaan sesi 1 di-commit sebagai `feat(MOD-02): skema & domain order…[BR-02][BR-14][BR-17]` + `chore(tooling): model default big-pickle`, lalu di-push ke `origin/main`. Audit ulang: `php artisan test` 170/170 (693 assertion), `pint` bersih, kolom migration & nilai enum identik `05-data-model.md`. |
