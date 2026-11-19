@@ -44,6 +44,8 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('orders', OrderController::class)->only(['index', 'create', 'store', 'show']);
     Route::post('/orders/{order}/validate', [OrderController::class, 'validate'])->name('orders.validate');
+    Route::get('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+    Route::post('/orders/{order}/cancel', [OrderController::class, 'cancelStore'])->name('orders.cancel.store');
 
     Route::get('/password/change', [PasswordChangeController::class, 'edit'])->name('password.change');
     Route::put('/password/change', [PasswordChangeController::class, 'update'])->name('password.change.update');

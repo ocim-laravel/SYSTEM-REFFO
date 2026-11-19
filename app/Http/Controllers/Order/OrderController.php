@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Order;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Order\CancelOrderRequest;
 use App\Http\Requests\Order\OrderFilterRequest;
 use App\Http\Requests\Order\StoreOrderRequest;
 use App\Models\Customer;
@@ -64,7 +65,7 @@ class OrderController extends Controller
     {
         $this->authorize('view', $order);
 
-        $order->load(['customer', 'items', 'items.statusHistories.changedBy', 'creator', 'validator']);
+        $order->load(['customer', 'items', 'items.statusHistories.changedBy', 'creator', 'validator', 'cancellation.decidedBy']);
 
         return view('orders.show', ['order' => $order]);
     }
@@ -77,6 +78,31 @@ class OrderController extends Controller
 
         return redirect()->route('orders.show', $order)
             ->with('status', 'Order berhasil divalidasi dan item masuk antrean desain.');
+    }
+
+    public function cancel(Order $order): View
+    {
+        $this->authorize('cancel', $order);
+
+        return view('orders.cancel', ['order' => $order->load('customer')]);
+    }
+
+    public function cancelStore(CancelOrderRequest $request, Order $order, OrderService $service): RedirectResponse
+    {
+        $this->authorize('cancel', $order);
+
+        $service->cancel(
+            $order,
+            $request->validated('reason'),
+            $request->validated('actual_cost'),
+            $request->validated('settlement_amount'),
+            $request->validated('settlement_note'),
+            $request->user(),
+            $this->meta($request),
+        );
+
+        return redirect()->route('orders.show', $order)
+            ->with('status', 'Order berhasil dibatalkan.');
     }
 
     /**

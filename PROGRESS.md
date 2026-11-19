@@ -11,28 +11,27 @@
 Status: **BERJALAN** *(fase aktif ditetapkan awal sesi; gate PH-01 disetujui Owner 19 November 2026 — lihat arsip PH-01; ADR-004: status awal order tergantung pembuatnya)*
 Estimasi: Minggu 9–12
 Modul: MOD-02 (Admin & Order)
-Sesi ini: **skema + domain saja** — belum controller, view, route, policy, atau menu.
+Sesi ini: **AC-02-5 — pembatalan order** (`OrderService::cancel()`, route/form, feature test). Controller, view, route, policy, dan menu order sudah dibuat pada sesi sebelumnya.
 
 ### Ruang lingkup PH-02 (HANYA ini)
 - [x] **AC-02-1** Order dengan 3 item menghitung total benar, termasuk diskon *(`OrderService::create()`: subtotal `Σ qty × unit_price`, dikurangi diskon, ditambah `delivery_fee` sekali per order BR-14; `tax` tidak masuk rumus; feature test)*
 - [x] **AC-02-2** Mengubah status item A tidak mengubah item B (BR-02) *(`changeItemStatus()` + `item_status_histories` integritas #7; feature test)*
 - [x] **AC-02-6** Setiap perubahan harga tercatat di audit log dengan before/after (BR-17) *(domain: `OrderService::updateItemPrice()` + feature test; akses via UI/route menyusul)*
-- [ ] AC-02-3 Draft buatan Designer berstatus `pending_validation`; Designer tidak bisa memvalidasi (403) (BR-03) — butuh policy/controller
-- [ ] AC-02-4 Setelah `validated`, item masuk `queued_design` — butuh state machine lanjutan
-- [ ] AC-02-5 Pembatalan menyimpan alasan, biaya aktual, dan nilai kesepakatan terpisah (BR-15) — tabel sudah ada, service belum
+- [x] **AC-02-3** Draft buatan Designer berstatus `pending_validation`; Designer tidak bisa memvalidasi (403) (BR-03) *(policy + route + feature test; ADR-004: Admin/Owner → `draft`)*
+- [x] **AC-02-4** Setelah `validated`, item masuk `queued_design` *(state machine `OrderService::validate()` + `item_status_histories`; feature test)*
+- [x] **AC-02-5** Pembatalan menyimpan alasan, biaya aktual, dan nilai kesepakatan terpisah (BR-15) *(`OrderService::cancel()` + `POST /orders/{order}/cancel`, form, audit `order.cancelled` before/after BR-17; feature test)*
 - [ ] AC-02-7 Item yang sudah `acc` tidak bisa diubah tanpa Change Request (BR-05, MOD-03)
 - [ ] AC-02-8 PDF ringkasan order memuat pelanggan, item, total, deadline
 
 ### JANGAN DISENTUH di PH-02
 - MOD-03 (desain), MOD-04 (produksi), MOD-05 (finishing)
 - MOD-06 (delivery), MOD-07 (finance), MOD-08/09 (HRD/material), MOD-11 (laporan)
-- Controller, view, route, policy, dan menu order (belum dibuat pada sesi skema + domain)
 - Dashboard, laporan, dan fitur realtime per divisi
 
 ### Kriteria selesai PH-02 (gate)
 - [ ] AC-02-1 … AC-02-8 lulus (lihat `docs/plan/modules/MOD-02-order.md`)
 - [ ] Demo 1 order 4 item (campur printing & reklame) sampai antrean desain
-- [x] `php artisan test` hijau & `pint` bersih *(170 test / 693 assertion pada sesi ini)*
+- [x] `php artisan test` hijau & `pint` bersih *(190 test / 821 assertion pada sesi ini)*
 
 ---
 
@@ -86,7 +85,7 @@ Sesi ini: **skema + domain saja** — belum controller, view, route, policy, ata
 |---|---|---|---|
 | PH-00 | Fondasi Sistem | MOD-10 | Selesai (gate disetujui Owner 2026-11-19) |
 | PH-01 | Pelanggan (CRM) | MOD-01 | Selesai (gate disetujui Owner 2026-11-19; AC-01-1…AC-01-6) |
-| PH-02 | Admin & Order | MOD-02 | **AKTIF** (skema + domain: AC-02-1, AC-02-2, AC-02-6 domain) |
+| PH-02 | Admin & Order | MOD-02 | **AKTIF** (AC-02-1, AC-02-2, AC-02-3, AC-02-4, AC-02-5, AC-02-6 domain; controller/route/view order) |
 | PH-03 | Designer | MOD-03 | Menunggu |
 | PH-04 | Operator / Printing | MOD-04 | Menunggu |
 | PH-05 | Finishing / QC / Packing | MOD-05 | Menunggu |
@@ -122,3 +121,4 @@ Sesi ini: **skema + domain saja** — belum controller, view, route, policy, ata
 | 2026-11-19 | PH-02 (MOD-02) | Commit skema + domain sesi 1 | `git` (`1bdf4bf`, `9a47d84`) | Pekerjaan sesi 1 di-commit sebagai `feat(MOD-02): skema & domain order…[BR-02][BR-14][BR-17]` + `chore(tooling): model default big-pickle`, lalu di-push ke `origin/main`. Audit ulang: `php artisan test` 170/170 (693 assertion), `pint` bersih, kolom migration & nilai enum identik `05-data-model.md`. |
 | 2026-11-19 | PH-02 (MOD-02) | ADR-003 — keputusan implementasi order disetujui Owner | `docs/plan/07-decisions/ADR-003-order-implementation.md` (baru), `PROGRESS.md` | Tiga keputusan ditetapkan & disetujui Owner: (1) `orders.customer_id` RESTRICT — pelanggan ber-order tak bisa dihapus permanen; (2) `order_items.qty` `decimal(15,2)`; (3) `orders.tax` `default 0` dan di luar rumus total. Hanya menambah file ADR + memperbarui `PROGRESS.md`; kode, migration, dan `docs/plan/**` lain tidak disentuh. |
 | 2026-11-19 | PH-02 (MOD-02) | ADR-004 — status awal order tergantung pembuat (pilih b) + AC-02-3/AC-02-4 | `docs/plan/07-decisions/ADR-004-order-initial-status.md` (baru), `app/Services/Order/OrderService.php`, `resources/views/orders/create.blade.php`, `tests/Feature/Order/{OrderDomainTest,OrderAccessAndStateTest}.php`, `PROGRESS.md` | `OrderService::create()` kini: Admin/Owner → `draft`, Designer → `pending_validation` (AC-02-3, BR-03). `validate()` menerima `draft` & `pending_validation`. `initialStatus()` baru. Test diperbarui: 181/181 hijau (770 assertion), `pint --dirty` bersih. Tidak ada migration, controller, view (kecuali satu baris hint), atau `docs/plan/**` lain yang disentuh. |
+| 2026-11-19 | PH-02 (MOD-02) | AC-02-5 — pembatalan order (BR-15, BR-17) | `app/Services/Order/OrderService.php`, `app/Policies/OrderPolicy.php`, `app/Http/Requests/Order/CancelOrderRequest.php` (baru), `app/Http/Controllers/Order/OrderController.php`, `routes/web.php`, `resources/views/orders/{cancel.blade.php (baru),show.blade.php}`, `tests/Feature/Order/OrderCancellationTest.php` (baru), `PROGRESS.md` | `OrderService::cancel()` menyimpan `order_cancellations` (alasan wajib, `actual_cost` & `settlement_amount` terpisah, `settlement_note`, `decided_by/at`), mengubah order + semua item → `cancelled` dengan riwayat status, serta audit `order.cancelled` before/after + reason (BR-17). Otorisasi `cancel` via `OrderPolicy` → `orders.manage` (Admin, Owner; Designer 403). Route `GET|POST /orders/{order}/cancel` + form dengan validasi Form Request (alasan min 5 karakter, nominal ≥ 0). Detail order menampilkan ringkasan pembatalan; tombol Validasi kini juga muncul untuk order `draft` (konsisten ADR-004). Bookkeeping: checkbox AC-02-3/02-4 dicentang karena sudah terimplementasi & terverifikasi. `php artisan test` hijau (190/190, 821 assertion — 9 test baru), `pint --dirty` bersih. Migration, `docs/plan/**`, dan MOD-03 dst tidak disentuh. Belum di-commit. |

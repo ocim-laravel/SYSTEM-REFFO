@@ -10,11 +10,16 @@
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
             @can('validate', $order)
-                @if ($order->status === App\Enums\OrderStatus::PendingValidation)
+                @if (in_array($order->status, [App\Enums\OrderStatus::Draft, App\Enums\OrderStatus::PendingValidation], true))
                     <form method="POST" action="{{ route('orders.validate', $order) }}" onsubmit="return confirm('Validasi order ini? Semua item akan masuk antrean desain.')" class="inline-form">
                         @csrf
                         <button type="submit" class="btn">Validasi Order</button>
                     </form>
+                @endif
+            @endcan
+            @can('cancel', $order)
+                @if ($order->status !== App\Enums\OrderStatus::Cancelled)
+                    <a href="{{ route('orders.cancel', $order) }}" class="btn danger">Batalkan Order</a>
                 @endif
             @endcan
             <a href="{{ route('orders.index') }}" class="btn secondary">Kembali</a>
@@ -39,6 +44,19 @@
             <tr><th>Divalidasi oleh</th><td>{{ $order->validator?->name ?? '-' }} {{ $order->validated_at ? '(' . $order->validated_at->format('d/m/Y H:i') . ')' : '' }}</td></tr>
         </tbody>
     </table>
+
+    @if ($order->cancellation)
+        <h2>Pembatalan</h2>
+        <table>
+            <tbody>
+                <tr><th>Alasan</th><td>{{ $order->cancellation->reason }}</td></tr>
+                <tr><th>Biaya Aktual</th><td>Rp {{ number_format((float) $order->cancellation->actual_cost, 2, ',', '.') }}</td></tr>
+                <tr><th>Nilai Kesepakatan</th><td>Rp {{ number_format((float) $order->cancellation->settlement_amount, 2, ',', '.') }}</td></tr>
+                <tr><th>Catatan Kesepakatan</th><td>{{ $order->cancellation->settlement_note ?: '-' }}</td></tr>
+                <tr><th>Diputuskan oleh</th><td>{{ $order->cancellation->decidedBy?->name ?? '-' }} ({{ $order->cancellation->decided_at?->format('d/m/Y H:i') ?? '-' }})</td></tr>
+            </tbody>
+        </table>
+    @endif
 
     <h2>Item</h2>
     <table>

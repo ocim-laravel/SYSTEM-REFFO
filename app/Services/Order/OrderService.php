@@ -10,6 +10,7 @@ use App\Enums\UserRole;
 use App\Models\Customer;
 use App\Models\ItemStatusHistory;
 use App\Models\Order;
+use App\Models\OrderCancellation;
 use App\Models\OrderItem;
 use App\Models\User;
 use App\Services\Customer\CustomerService;
@@ -276,6 +277,83 @@ class OrderService
         ]);
 
         return $order->refresh();
+    }
+
+    /**
+     * Batalkan order: simpan alasan, biaya aktual, dan nilai kesepakatan terpisah (AC-02-5, BR-15, BR-17).
+     * Hanya Admin (butuh alasan) atau Owner — otorisasi di policy/controller.
+     *
+     * @param  array{ip?: string|null, user_agent?: string|null}  $meta
+     */
+    public function cancel(
+        Order $order,
+        string $reason,
+        int|float|string $actualCost,
+        int|float|string $settlementAmount,
+        ?string $settlementNote,
+        User $actor,
+        array $meta = [],
+    ): Order {
+        $reason = trim($reason);
+        if ($reason === '') {
+            throw ValidationException::withMessages([
+                'reason' => 'Alasan pembatalan wajib diisi.',
+            ]);
+        }
+
+        if ($order->status === OrderStatus::Cancelled) {
+            throw ValidationException::withMessages([
+                'order' => 'Order sudah dibatalkan.',
+            ]);
+        }
+
+        $before = $this->orderSnapshot($order);
+
+        return DB::transaction(function () use ($order, $reason, $actualCost, $settlementAmount, $settlementNote, $actor, $meta, $before): Order {
+            OrderCancellation::query()->updateOrCreate(
+                ['order_id' => $order->id],
+                [
+                    'reason' => $reason,
+                    'actual_cost' => $this->amount($actualCost),
+                    'settlement_amount' => $this->amount($settlementAmount),
+                    'settlement_note' => $settlementNote !== null && trim($settlementNote) !== '' ? trim($settlementNote) : null,
+                    'decided_by' => $actor->id,
+                    'decided_at' => now(),
+                ],
+            );
+
+            foreach ($order->items()->get() as $item) {
+                if ($item->status !== ItemStatus::Cancelled) {
+                    $from = $item->status;
+                    $item->update(['status' => ItemStatus::Cancelled]);
+
+                    ItemStatusHistory::create([
+                        'order_item_id' => $item->id,
+                        'from_status' => $from?->value,
+                        'to_status' => ItemStatus::Cancelled->value,
+                        'changed_by' => $actor->id,
+                        'note' => 'Order dibatalkan.',
+                    ]);
+                }
+            }
+
+            $order->update(['status' => OrderStatus::Cancelled]);
+            $order->refresh()->load(['items', 'cancellation']);
+
+            $this->audit->record(
+                action: 'order.cancelled',
+                actor: $actor,
+                modelType: Order::class,
+                modelId: $order->id,
+                before: $before,
+                after: $this->orderSnapshot($order),
+                reason: $reason,
+                ip: $meta['ip'] ?? null,
+                userAgent: $meta['user_agent'] ?? null,
+            );
+
+            return $order;
+        });
     }
 
     /**

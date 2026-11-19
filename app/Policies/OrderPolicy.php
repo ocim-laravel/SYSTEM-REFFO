@@ -37,4 +37,9 @@ class OrderPolicy
     {
         return $user->can('orders.validate');
     }
+
+    public function cancel(User $user, Order $order): bool
+    {
+        return $user->can('orders.manage');
+    }
 }
