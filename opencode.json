@@ -1,6 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "opencode/big-pickle",
+  "model": "opencode/deepseek-v4.1-flash-free",
   "instructions": ["docs/plan/*.md"],
   "permissions": [
     { "action": "shell", "resource": "*", "effect": "ask" },
