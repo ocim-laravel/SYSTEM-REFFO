@@ -8,6 +8,7 @@ use App\Services\System\AuditLogService;
 use App\Services\System\NumberGeneratorService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Business logic pelanggan (MOD-01, AC-01-1).
@@ -49,6 +50,23 @@ class CustomerService
             ->orderByDesc('id')
             ->paginate(20)
             ->withQueryString();
+    }
+
+    /**
+     * Pastikan pelanggan boleh dipakai pada order baru (AC-01-2, MOD-01).
+     *
+     * Dipanggil MOD-02 sebelum order dibuat. Pelanggan nonaktif ditolak
+     * sehingga tidak bisa dipilih sebagai pemilik order baru.
+     *
+     * @throws ValidationException
+     */
+    public function assertSelectableForOrder(Customer $customer): void
+    {
+        if (! $customer->is_active) {
+            throw ValidationException::withMessages([
+                'customer_id' => 'Pelanggan nonaktif tidak dapat dipilih untuk order baru.',
+            ]);
+        }
     }
 
     /**

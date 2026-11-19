@@ -22,6 +22,7 @@
             <tr><th>Email</th><td>{{ $customer->email ?: '-' }}</td></tr>
             <tr><th>Alamat</th><td>{{ $customer->address ?: '-' }}</td></tr>
             <tr><th>Catatan Internal</th><td>{{ $customer->notes ?: '-' }}</td></tr>
+            <tr><th>Status</th><td>{{ $customer->is_active ? 'Aktif' : 'Nonaktif' }}</td></tr>
             <tr><th>Dicatat oleh</th><td>{{ $customer->creator?->name ?? '-' }}</td></tr>
         </tbody>
     </table>
