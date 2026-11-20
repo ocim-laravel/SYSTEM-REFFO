@@ -92,4 +92,28 @@ class OrderItem extends Model
     {
         return $this->hasOne(PrintJob::class);
     }
+
+    /**
+     * @return HasMany<FinishingJob, $this>
+     */
+    public function finishingJobs(): HasMany
+    {
+        return $this->hasMany(FinishingJob::class);
+    }
+
+    /**
+     * @return HasMany<Rework, $this>
+     */
+    public function reworks(): HasMany
+    {
+        return $this->hasMany(Rework::class);
+    }
+
+    /**
+     * @return HasMany<Packing, $this>
+     */
+    public function packings(): HasMany
+    {
+        return $this->hasMany(Packing::class);
+    }
 }

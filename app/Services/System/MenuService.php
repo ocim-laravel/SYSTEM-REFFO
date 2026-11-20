@@ -31,7 +31,7 @@ class MenuService
                     ['key' => 'order', 'label' => 'Order', 'route' => 'orders.index', 'permission' => 'menu.order'],
                     ['key' => 'design', 'label' => 'Desain', 'route' => 'design.queue', 'permission' => 'menu.design'],
                     ['key' => 'production', 'label' => 'Produksi', 'route' => 'production.index', 'permission' => 'menu.production'],
-                    ['key' => 'finishing', 'label' => 'Finishing & QC', 'route' => 'finishing.index', 'permission' => 'menu.finishing'],
+                    ['key' => 'finishing', 'label' => 'Finishing & QC', 'route' => 'finishing.index', 'permission' => 'finishing.view'],
                     ['key' => 'delivery', 'label' => 'Pengiriman', 'route' => 'deliveries.index', 'permission' => 'menu.delivery'],
                     ['key' => 'finance', 'label' => 'Keuangan', 'route' => 'finance.index', 'permission' => 'menu.finance'],
                     ['key' => 'hrd', 'label' => 'HRD', 'route' => 'hrd.index', 'permission' => 'menu.hrd'],

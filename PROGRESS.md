@@ -1,4 +1,4 @@
-﻿# PROGRESS â€” REFFO SYSTEM V1.1
+# PROGRESS â€” REFFO SYSTEM V1.1
 
 > File ini adalah **rem tangan** pengembangan. Agent wajib membacanya lebih dulu.
 > Hanya fase aktif yang boleh dikerjakan. Perbarui di akhir setiap sesi.
@@ -7,6 +7,29 @@
 
 ## FASE AKTIF
 
+**PH-05 — FINISHING / QC / PACKING (MOD-05)**
+Status: **SELESAI** *(AC-05-1…AC-05-6 lulus; DoD terpenuhi. Gate menunggu persetujuan Owner.)*
+Commit yang disarankan / dilakukan: `feat(MOD-05): antrean, assign, progres, QC, rework, packing [AC-05-1..AC-05-6][BR-11][BR-12][BR-17]` (dibuat pada penutupan PH-05; belum di-push). `opencode.json` sengaja tidak dimasukkan commit.
+
+### Ruang lingkup PH-05 (HANYA ini)
+- [x] **AC-05-1** Item belum `printed` ditolak masuk finishing (BR-12).
+- [x] **AC-05-2** QC `fail` wajib catatan; tanpa catatan validasi gagal.
+- [x] **AC-05-3** QC `fail` → item `rework`, tercatat di `item_status_histories` & audit (BR-17).
+- [x] **AC-05-4** Rework selesai → QC dapat diulang sampai `pass`; rework ke tahap cetak wajib lewat cetak ulang yang disetujui (BR-11).
+- [x] **AC-05-5** Packing hanya setelah QC `pass`; status item menjadi `packed`.
+- [x] **AC-05-6** Riwayat menampilkan urutan finishing → QC → rework → packing beserta pelaku.
+Modul: MOD-05 (Finishing / QC / Packing)
+Aturan: BR-11, BR-12, BR-17.
+Gate: Item gagal QC bisa di-rework lalu lulus dengan riwayat utuh — terbukti oleh feature test MOD-05.
+
+### JANGAN DISENTUH di PH-05
+- MOD-06 (delivery), MOD-07 (finance), MOD-08/09 (HRD/material), MOD-11 (laporan)
+- Dashboard, laporan, dan fitur realtime per divisi
+- `docs/plan/**`, `opencode.json`, tabel akun demo, dan `DemoAccountService::isEnabled()`
+
+---
+
+### Arsip PH-04 — ringkasan (fase sebelumnya)
 **PH-04 — OPERATOR / PRINTING (MOD-04)**
 Status: **SELESAI** *(AC-04-1…AC-04-8 lulus; DoD terpenuhi. Fase berikutnya PH-05 belum dibuka, menunggu persetujuan Owner.)*
 Commit: `feat(MOD-04): antrean, assign, claim, progress, handover, reprint [AC-04-1..AC-04-8]` (dibuat, belum di-push).
@@ -142,7 +165,7 @@ Gate: Antrean H-1 memuat item dengan deadline hari kerja berikutnya; reprint but
 | PH-02 | Admin & Order | MOD-02 | **Gate selesai; penyempurnaan ADR-008 dijadwalkan minggu 13** |
 | PH-03 | Designer | MOD-03 | **Selesai** (AC-03-1…AC-03-8; 20 November 2026) |
 | PH-04 | Operator / Printing | MOD-04 | **Selesai** (AC-04-1…AC-04-8; 21 November 2026) |
-| PH-05 | Finishing / QC / Packing | MOD-05 | Menunggu (minggu 23–25) |
+| PH-05 | Finishing / QC / Packing | MOD-05 | **Selesai** (AC-05-1…AC-05-6; 21 November 2026) |
 | PH-06 | Reklame / Delivery / Installation | MOD-06 | Menunggu (minggu 26–28) |
 | PH-07 | Finance | MOD-07 | Menunggu (minggu 29–31) |
 | PH-08 | HRD & Material | MOD-08, MOD-09 | Menunggu (minggu 32–34) |
@@ -154,6 +177,7 @@ Gate: Antrean H-1 memuat item dengan deadline hari kerja berikutnya; reprint but
 
 | Tanggal | Fase | ID selesai | File diubah | Catatan |
 |---|---|---|---|---|
+| 2026-11-21 | PH-05 (MOD-05) | AC-05-1…AC-05-6 (BR-11, BR-12, BR-17) | `app/Enums/{FinishingJobStatus,QcResult,RedoStage,ReworkStatus,PackingStatus}.php`, `app/Models/{FinishingJob,QcRecord,Rework,Packing}.php`, `app/Services/Production/FinishingService.php`, `app/Policies/FinishingPolicy.php`, `app/Http/Requests/Finishing/*.php`, `app/Http/Controllers/Finishing/*.php`, `resources/views/finishing/*.blade.php`, `database/migrations/2026_11_21_110{000,100,200,300}_create_{finishing_jobs,qc_records,reworks,packings}_table.php`, `tests/Feature/Finishing/*.php`; integrasi: `app/Models/OrderItem.php`, `app/Providers/AppServiceProvider.php`, `app/Services/System/MenuService.php`, `database/seeders/RolePermissionSeeder.php`, `routes/web.php` | Antrean finishing dari item `printed` (guard BR-12), assign/claim oleh Admin Produksi & operator berwenang, pencatatan progres, QC lulus/gagal + catatan, rework dengan alasan & tahap pengulangan, packing `in_progress → packed`, serta audit log untuk setiap aksi penting (BR-17). Riwayat QC/rework/packing utuh; garda status mencegah item belum `printed` masuk finishing. Verifikasi: `php artisan test --filter=Finishing` 16 test/125 assertion lulus; `php artisan test` 294 test/1.514 assertion lulus; `./vendor/bin/pint --test --dirty` bersih. Tidak menyentuh MOD-06/07/08/09/11, `docs/plan/**`, `opencode.json`, tabel akun demo, atau fitur realtime. Commit penutupan dibuat dengan pesan `feat(MOD-05): antrean, assign, progres, QC, rework, packing [AC-05-1..AC-05-6][BR-11][BR-12][BR-17]`; push tidak dilakukan. |
 | 2026-11-21 | PH-04 (MOD-04) | Penutupan AC-04-8 + perbaikan `SidebarMenuTest` (BR-06/BR-08) | `docs/plan/modules/MOD-04-operator.md`, `tests/Feature/System/SidebarMenuTest.php`, `PROGRESS.md` | AC-04-8 didefinisikan di MOD-04: Admin melihat menu Produksi & mengakses antrean produksi. `SidebarMenuTest` disesuaikan — Admin kini mengharapkan `production` visible (sebelumnya hidden), method di-rename menjadi `admin_sees_customer_order_and_production_menus`. Verifikasi: `php artisan test --filter=SidebarMenuTest` 7/7 (79 assertion); `php artisan test` 278/278 (1.398 assertion); `./vendor/bin/pint --test --dirty` bersih. Commit `feat(MOD-04): antrean, assign, claim, progress, handover, reprint [AC-04-1..AC-04-8]` dibuat (belum di-push). Tidak menyentuh MOD-05/06/07/08/09/11 atau `opencode.json`. |
 | 2026-11-21 | PH-04 (MOD-04) | Implementasi AC-04-1..AC-04-7 (BR-06, BR-07, BR-08, BR-09, BR-10, BR-11, BR-17) | Domain/service: `app/Enums/{PrintQueueClass,PrintJobStatus,ReprintStatus}.php`, `app/Models/{PrintJob,PrintJobOperator,ReprintRequest}.php`, `app/Policies/ProductionPolicy.php`, `app/Services/Production/ProductionService.php`, `database/migrations/2026_11_21_100{000,100,200}_create_{print_jobs,print_job_operators,reprint_requests}_table.php`; integrasi: `app/Services/Design/DesignService.php`, `app/Services/System/{MenuService,WorkCalendarService}.php`, `app/Models/OrderItem.php`, `database/seeders/RolePermissionSeeder.php`, `app/Providers/AppServiceProvider.php`, `routes/web.php`; HTTP/UI: `app/Http/Requests/Production/*.php`, `app/Http/Controllers/Production/*.php`, `resources/views/production/*.blade.php`; test: `tests/Feature/Operator/*.php`; dokumen: `PROGRESS.md` | Antrean Urgent/H-1/Reguler (H-1 via `WorkCalendarService::previousWorkday()`), intake/sync print job saat handoff desain, assign/claim, progres & `printed`, handover (1 operator aktif + alasan), reprint request/approve/reject + audit. Verifikasi: `./vendor/bin/pint --test --dirty` lulus; `php artisan test --filter=Operator` 13 test/114 assertion lulus; `php artisan test` 278 test, 277 lulus, 1 gagal di luar scope MOD-04 (`Tests\Feature\System\SidebarMenuTest::admin_only_sees_customer_and_order_menus`, Admin kini melihat menu produksi). `AC-04-8` tidak ada di spesifikasi MOD-04 (hanya AC-04-1..AC-04-7) → belum bisa diselesaikan. `opencode.json` pre-existing tidak diubah; tidak ada commit/push. |
 | 2026-11-20 | PH-03 (MOD-03) | Penutupan PH-03: AC-03-1..AC-03-8 (BR-03, BR-04, BR-05, BR-17) | `app/Services/Design/DesignService.php`, `tests/Feature/Design/DesignChangeRequestTest.php`, `PROGRESS.md` (+ seluruh file MOD-03 yang belum di-commit: enum, model, migrasi, Form Request, controller, policy, view, test, route, seeder, `OrderItem`/`OrderService`/`AppServiceProvider`) | Audit sebelum penutupan menemukan blocker ACC ulang pasca-CR (file `Final` lama membuat ACC versi baru ditolak). Diperbaiki di `approve()`: satu CR disyaratkan untuk satu ACC ulang, file final lama diturunkan menjadi draft, riwayat `design_approvals` tetap utuh. Test end-to-end ditambahkan: ACC → CR → ACC ulang → handoff, plus penolakan ACC ulang tanpa CR baru. `php artisan test` hijau, `pint --dirty` bersih. `opencode.json` sengaja tidak dimasukkan commit. |

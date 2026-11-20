@@ -7,6 +7,8 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Customer\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Design\DesignController;
+use App\Http\Controllers\Finishing\FinishingJobController;
+use App\Http\Controllers\Finishing\FinishingQueueController;
 use App\Http\Controllers\Operator\DashboardController as OperatorDashboardController;
 use App\Http\Controllers\Order\OrderController;
 use App\Http\Controllers\Production\ProductionJobController;
@@ -77,6 +79,18 @@ Route::middleware('auth')->group(function () {
     Route::post('/production/{item}/progress', [ProductionJobController::class, 'progress'])->name('production.progress');
     Route::post('/production/{item}/handover', [ProductionJobController::class, 'handover'])->name('production.handover');
     Route::post('/production/{item}/reprint', [ProductionJobController::class, 'requestReprint'])->name('production.reprint.request');
+
+    Route::get('/finishing/queue', [FinishingQueueController::class, 'index'])->name('finishing.index');
+    Route::get('/finishing/{item}', [FinishingJobController::class, 'show'])->name('finishing.show');
+    Route::post('/finishing/{item}/intake', [FinishingQueueController::class, 'intake'])->name('finishing.intake');
+    Route::post('/finishing/{item}/assign', [FinishingJobController::class, 'assign'])->name('finishing.assign');
+    Route::post('/finishing/{item}/claim', [FinishingJobController::class, 'claim'])->name('finishing.claim');
+    Route::post('/finishing/{item}/progress', [FinishingJobController::class, 'progress'])->name('finishing.progress');
+    Route::post('/finishing/{item}/qc', [FinishingJobController::class, 'qc'])->name('finishing.qc');
+    Route::post('/finishing/{item}/rework/{rework}/start', [FinishingJobController::class, 'startRework'])->name('finishing.rework.start');
+    Route::post('/finishing/{item}/rework/{rework}/complete', [FinishingJobController::class, 'completeRework'])->name('finishing.rework.complete');
+    Route::post('/finishing/{item}/packing/start', [FinishingJobController::class, 'startPacking'])->name('finishing.packing.start');
+    Route::post('/finishing/{item}/packing/{packing}/complete', [FinishingJobController::class, 'completePacking'])->name('finishing.packing.complete');
 
     Route::get('/password/change', [PasswordChangeController::class, 'edit'])->name('password.change');
     Route::put('/password/change', [PasswordChangeController::class, 'update'])->name('password.change.update');
