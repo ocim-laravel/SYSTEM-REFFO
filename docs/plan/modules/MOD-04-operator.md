@@ -48,6 +48,9 @@ Mengelola antrean cetak, pembagian pekerjaan, progres, pergantian shift, dan cet
 - [ ] **AC-04-5** Handover menutup record lama dengan alasan dan membuka record baru (BR-10).
 - [ ] **AC-04-6** Cetak ulang tanpa approval tidak mengubah qty aktual (BR-11).
 - [ ] **AC-04-7** Setelah qty aktual dicatat, item dapat dipindah ke `printed`.
+- [ ] **AC-04-8** Menu dan akses produksi untuk Admin:
+  - Admin dapat melihat menu Produksi.
+  - Admin dapat mengakses antrean produksi.
 
 ## Definisi selesai
 Antrean H-1 terbukti benar untuk 3 skenario kalender, termasuk hari libur.

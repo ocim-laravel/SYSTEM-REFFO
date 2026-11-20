@@ -52,6 +52,20 @@ class WorkCalendarService
         return $cursor;
     }
 
+    /**
+     * Hitung satu hari kerja setelah tanggal acuan (MOD-04, BR-07).
+     */
+    public function nextWorkday(DateTimeInterface|string $date): Carbon
+    {
+        $cursor = Carbon::parse($date, config('app.timezone'))->startOfDay()->addDay();
+
+        while (! $this->isWorkday($cursor)) {
+            $cursor->addDay();
+        }
+
+        return $cursor;
+    }
+
     public function isWorkday(Carbon $date): bool
     {
         $entry = WorkCalendar::query()->whereDate('date', $date->toDateString())->first();

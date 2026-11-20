@@ -9,6 +9,9 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Design\DesignController;
 use App\Http\Controllers\Operator\DashboardController as OperatorDashboardController;
 use App\Http\Controllers\Order\OrderController;
+use App\Http\Controllers\Production\ProductionJobController;
+use App\Http\Controllers\Production\ProductionQueueController;
+use App\Http\Controllers\Production\ProductionReprintController;
 use App\Http\Controllers\System\DivisionController;
 use App\Http\Controllers\System\NotificationController;
 use App\Http\Controllers\System\OverrideController;
@@ -63,6 +66,17 @@ Route::middleware('auth')->group(function () {
     Route::post('/design/change-request/{changeRequest}/reject', [DesignController::class, 'rejectChangeRequest'])->name('design.change_request.reject');
 
     Route::get('/design/file/{file}/download', [DesignController::class, 'download'])->name('design.file.download');
+
+    Route::get('/production/queue', [ProductionQueueController::class, 'index'])->name('production.index');
+    Route::get('/production/reprints', [ProductionReprintController::class, 'index'])->name('production.reprints.index');
+    Route::post('/production/reprints/{reprintRequest}/approve', [ProductionReprintController::class, 'approve'])->name('production.reprints.approve');
+    Route::post('/production/reprints/{reprintRequest}/reject', [ProductionReprintController::class, 'reject'])->name('production.reprints.reject');
+    Route::get('/production/{item}', [ProductionJobController::class, 'show'])->name('production.show');
+    Route::post('/production/{item}/assign', [ProductionJobController::class, 'assign'])->name('production.assign');
+    Route::post('/production/{item}/claim', [ProductionJobController::class, 'claim'])->name('production.claim');
+    Route::post('/production/{item}/progress', [ProductionJobController::class, 'progress'])->name('production.progress');
+    Route::post('/production/{item}/handover', [ProductionJobController::class, 'handover'])->name('production.handover');
+    Route::post('/production/{item}/reprint', [ProductionJobController::class, 'requestReprint'])->name('production.reprint.request');
 
     Route::get('/password/change', [PasswordChangeController::class, 'edit'])->name('password.change');
     Route::put('/password/change', [PasswordChangeController::class, 'update'])->name('password.change.update');

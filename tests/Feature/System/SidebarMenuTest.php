@@ -55,12 +55,12 @@ class SidebarMenuTest extends TestCase
     }
 
     #[Test]
-    public function admin_only_sees_customer_and_order_menus(): void
+    public function admin_sees_customer_order_and_production_menus(): void
     {
         $this->assertMenuFor(
             UserRole::Admin,
-            ['dashboard', 'customer', 'order'],
-            ['design', 'production', 'finance', 'hrd', 'delivery', 'reports', 'divisions'],
+            ['dashboard', 'customer', 'order', 'production'],
+            ['design', 'finance', 'hrd', 'delivery', 'reports', 'divisions'],
         );
     }
 

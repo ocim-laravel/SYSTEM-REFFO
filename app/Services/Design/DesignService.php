@@ -16,6 +16,7 @@ use App\Models\ItemStatusHistory;
 use App\Models\OrderItem;
 use App\Models\User;
 use App\Services\Order\OrderService;
+use App\Services\Production\ProductionService;
 use App\Services\System\AuditLogService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
@@ -35,6 +36,7 @@ class DesignService
     public function __construct(
         private readonly OrderService $orders,
         private readonly AuditLogService $audit,
+        private readonly ProductionService $production,
     ) {}
 
     /**
@@ -521,6 +523,9 @@ class DesignService
             // AC-03-7 adalah transisi lanjut yang sah, jadi ditulis di sini
             // dengan riwayat status yang sama seperti changeItemStatus (integritas #7).
             $locked->update(['status' => ItemStatus::QueuedProduction]);
+
+            // Intake produksi (MOD-04, BR-06/BR-07): buat print job + queue_class.
+            $this->production->createForItem($locked->fresh());
 
             ItemStatusHistory::create([
                 'order_item_id' => $locked->id,

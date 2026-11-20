@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Satu pekerjaan di dalam order; spesifikasi, status, dan riwayatnya sendiri
@@ -82,5 +83,13 @@ class OrderItem extends Model
     public function changeRequests(): HasMany
     {
         return $this->hasMany(ChangeRequest::class);
+    }
+
+    /**
+     * @return HasOne<PrintJob, $this>
+     */
+    public function printJob(): HasOne
+    {
+        return $this->hasOne(PrintJob::class);
     }
 }

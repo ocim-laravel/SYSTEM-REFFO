@@ -7,21 +7,27 @@
 
 ## FASE AKTIF
 
-**PH-03 â€” DESIGNER (MOD-03)**
-Status: **SELESAI** *(AC-03-1â€¦AC-03-8 lulus; DoD terpenuhi. Fase berikutnya PH-04 belum dibuka, menunggu persetujuan Owner.)*
-Commit yang disarankan dan telah dibuat: `feat(MOD-03): antrean, upload, revisi, ACC, CR, dan handoff [AC-03-1..AC-03-8]` (belum di-push).
+**PH-04 — OPERATOR / PRINTING (MOD-04)**
+Status: **SELESAI** *(AC-04-1…AC-04-8 lulus; DoD terpenuhi. Fase berikutnya PH-05 belum dibuka, menunggu persetujuan Owner.)*
+Commit: `feat(MOD-04): antrean, assign, claim, progress, handover, reprint [AC-04-1..AC-04-8]` (dibuat, belum di-push).
 
-### Ruang lingkup PH-03 (HANYA ini)
-- [x] **AC-03-1** Antrean desain hanya memuat item `queued_design`, urut prioritas → deadline. *(filter + orderByRaw prioritas, lalu deadline)*
-- [x] **AC-03-2** Designer bisa mengambil tugas; nama & waktu tercatat.
-- [x] **AC-03-3** Upload v2 tidak menghapus v1; keduanya bisa diunduh.
-- [x] **AC-03-4** Siklus revisi ke-4 ditolak + tawaran Change Request (BR-04).
-- [x] **AC-03-5** ACC mengunci versi final (BR-05, BR-17).
-- [x] **AC-03-6** Change Request menyimpan dampak biaya & deadline; setelah disetujui item dapat direvisi dan **di-ACC ulang** (BR-05, BR-17). *(termasuk perbaikan guard ACC ulang: satu CR untuk satu ACC ulang)*
-- [x] **AC-03-7** Setelah ACC, item dapat diserahkan ke produksi (`queued_production`) oleh Admin.
-- [x] **AC-03-8** Riwayat menampilkan urutan versi, revisi, dan ACC beserta pelakunya.
-Modul: MOD-03 (Designer)
-Gate: 1 item melewati 3 siklus revisi + 1 CR tanpa kehilangan riwayat — **terbukti** oleh test end-to-end ACC → CR → ACC ulang → handoff.
+### Ruang lingkup PH-04 (HANYA ini)
+- [x] **AC-04-1** Item dengan deadline Senin masuk antrean **H-1** pada hari Jumat (BR-07).
+- [x] **AC-04-2** Deadline setelah tanggal libur → H-1 melompati hari libur.
+- [x] **AC-04-3** Operator biasa tidak bisa membagi pekerjaan ke operator lain (403) (BR-08).
+- [x] **AC-04-4** Operator berwenang bisa claim; operator lain tidak bisa claim item yang sudah dipegang.
+- [x] **AC-04-5** Handover menutup record lama dengan alasan dan membuka record baru (BR-10).
+- [x] **AC-04-6** Cetak ulang tanpa approval tidak mengubah qty aktual (BR-11).
+- [x] **AC-04-7** Setelah qty aktual dicatat, item dapat dipindah ke `printed`.
+- [x] **AC-04-8** Admin dapat melihat menu Produksi dan mengakses antrean produksi. *(definisi ditambahkan ke MOD-04; `SidebarMenuTest` disesuaikan — Admin kini melihat `production`)*
+Modul: MOD-04 (Operator / Printing)
+Aturan: BR-06, BR-07, BR-08, BR-09, BR-10, BR-11, BR-17.
+Gate: Antrean H-1 memuat item dengan deadline hari kerja berikutnya; reprint butuh approval — **terbukti** oleh feature test MOD-04.
+
+### Arsip PH-03 — ringkasan (fase sebelumnya)
+- [x] AC-03-1…AC-03-8 selesai (lihat `docs/plan/modules/MOD-03-designer.md`).
+- [x] Gate PH-03 selesai: 1 item melewati 3 siklus revisi + 1 CR tanpa kehilangan riwayat.
+- Commit: `feat(MOD-03): antrean, upload, revisi, ACC, CR, dan handoff [AC-03-1..AC-03-8]`.
 
 ### Ruang lingkup PH-02 (HANYA ini)
 - [x] **AC-02-1** Order dengan 3 item menghitung total benar, termasuk diskon *(`OrderService::create()`: subtotal `Î£ qty Ã— unit_price`, dikurangi diskon, ditambah `delivery_fee` sekali per order BR-14; `tax` tidak masuk rumus; feature test)*
@@ -35,8 +41,8 @@ Gate: 1 item melewati 3 siklus revisi + 1 CR tanpa kehilangan riwayat — **terb
 - [x] **AC-02-9** Order campuran pcs/m²: satu order boleh mencampur item Produk/Produk Jadi (pcs) dan Printing (m²); ringkasan sebelum proses menampilkan pelanggan, layanan, item, subtotal otomatis, diskon editable, biaya kirim editable, total akhir (ADR-008) *(backend `StoreOrderRequest`/`OrderService::create()`; form create + ringkasan; feature test)*
 - [x] **AC-02-10** Nota menampilkan quantity asli serta luas tagihan item m²: Kolom Qty = angka saja, Kolom Satuan = m²/pcs (ADR-008) *(show.blade.php & pdf.blade.php; feature test)*
 
-### JANGAN DISENTUH di PH-03
-- MOD-04 (produksi), MOD-05 (finishing), MOD-06 (delivery), MOD-07 (finance)
+### JANGAN DISENTUH di PH-04
+- MOD-05 (finishing), MOD-06 (delivery), MOD-07 (finance)
 - MOD-08/09 (HRD/material), MOD-11 (laporan)
 - Dashboard, laporan, dan fitur realtime per divisi
 - `opencode.json` (perubahan milik user; sengaja tidak dimasukkan commit)
@@ -135,7 +141,7 @@ Gate: 1 item melewati 3 siklus revisi + 1 CR tanpa kehilangan riwayat — **terb
 | PH-01 | Pelanggan (CRM) | MOD-01 | Selesai (gate disetujui Owner 2026-11-19; AC-01-1â€¦AC-01-6) |
 | PH-02 | Admin & Order | MOD-02 | **Gate selesai; penyempurnaan ADR-008 dijadwalkan minggu 13** |
 | PH-03 | Designer | MOD-03 | **Selesai** (AC-03-1…AC-03-8; 20 November 2026) |
-| PH-04 | Operator / Printing | MOD-04 | Menunggu (minggu 18–22) |
+| PH-04 | Operator / Printing | MOD-04 | **Selesai** (AC-04-1…AC-04-8; 21 November 2026) |
 | PH-05 | Finishing / QC / Packing | MOD-05 | Menunggu (minggu 23–25) |
 | PH-06 | Reklame / Delivery / Installation | MOD-06 | Menunggu (minggu 26–28) |
 | PH-07 | Finance | MOD-07 | Menunggu (minggu 29–31) |
@@ -148,6 +154,8 @@ Gate: 1 item melewati 3 siklus revisi + 1 CR tanpa kehilangan riwayat — **terb
 
 | Tanggal | Fase | ID selesai | File diubah | Catatan |
 |---|---|---|---|---|
+| 2026-11-21 | PH-04 (MOD-04) | Penutupan AC-04-8 + perbaikan `SidebarMenuTest` (BR-06/BR-08) | `docs/plan/modules/MOD-04-operator.md`, `tests/Feature/System/SidebarMenuTest.php`, `PROGRESS.md` | AC-04-8 didefinisikan di MOD-04: Admin melihat menu Produksi & mengakses antrean produksi. `SidebarMenuTest` disesuaikan — Admin kini mengharapkan `production` visible (sebelumnya hidden), method di-rename menjadi `admin_sees_customer_order_and_production_menus`. Verifikasi: `php artisan test --filter=SidebarMenuTest` 7/7 (79 assertion); `php artisan test` 278/278 (1.398 assertion); `./vendor/bin/pint --test --dirty` bersih. Commit `feat(MOD-04): antrean, assign, claim, progress, handover, reprint [AC-04-1..AC-04-8]` dibuat (belum di-push). Tidak menyentuh MOD-05/06/07/08/09/11 atau `opencode.json`. |
+| 2026-11-21 | PH-04 (MOD-04) | Implementasi AC-04-1..AC-04-7 (BR-06, BR-07, BR-08, BR-09, BR-10, BR-11, BR-17) | Domain/service: `app/Enums/{PrintQueueClass,PrintJobStatus,ReprintStatus}.php`, `app/Models/{PrintJob,PrintJobOperator,ReprintRequest}.php`, `app/Policies/ProductionPolicy.php`, `app/Services/Production/ProductionService.php`, `database/migrations/2026_11_21_100{000,100,200}_create_{print_jobs,print_job_operators,reprint_requests}_table.php`; integrasi: `app/Services/Design/DesignService.php`, `app/Services/System/{MenuService,WorkCalendarService}.php`, `app/Models/OrderItem.php`, `database/seeders/RolePermissionSeeder.php`, `app/Providers/AppServiceProvider.php`, `routes/web.php`; HTTP/UI: `app/Http/Requests/Production/*.php`, `app/Http/Controllers/Production/*.php`, `resources/views/production/*.blade.php`; test: `tests/Feature/Operator/*.php`; dokumen: `PROGRESS.md` | Antrean Urgent/H-1/Reguler (H-1 via `WorkCalendarService::previousWorkday()`), intake/sync print job saat handoff desain, assign/claim, progres & `printed`, handover (1 operator aktif + alasan), reprint request/approve/reject + audit. Verifikasi: `./vendor/bin/pint --test --dirty` lulus; `php artisan test --filter=Operator` 13 test/114 assertion lulus; `php artisan test` 278 test, 277 lulus, 1 gagal di luar scope MOD-04 (`Tests\Feature\System\SidebarMenuTest::admin_only_sees_customer_and_order_menus`, Admin kini melihat menu produksi). `AC-04-8` tidak ada di spesifikasi MOD-04 (hanya AC-04-1..AC-04-7) → belum bisa diselesaikan. `opencode.json` pre-existing tidak diubah; tidak ada commit/push. |
 | 2026-11-20 | PH-03 (MOD-03) | Penutupan PH-03: AC-03-1..AC-03-8 (BR-03, BR-04, BR-05, BR-17) | `app/Services/Design/DesignService.php`, `tests/Feature/Design/DesignChangeRequestTest.php`, `PROGRESS.md` (+ seluruh file MOD-03 yang belum di-commit: enum, model, migrasi, Form Request, controller, policy, view, test, route, seeder, `OrderItem`/`OrderService`/`AppServiceProvider`) | Audit sebelum penutupan menemukan blocker ACC ulang pasca-CR (file `Final` lama membuat ACC versi baru ditolak). Diperbaiki di `approve()`: satu CR disyaratkan untuk satu ACC ulang, file final lama diturunkan menjadi draft, riwayat `design_approvals` tetap utuh. Test end-to-end ditambahkan: ACC → CR → ACC ulang → handoff, plus penolakan ACC ulang tanpa CR baru. `php artisan test` hijau, `pint --dirty` bersih. `opencode.json` sengaja tidak dimasukkan commit. |
 | 2026-11-20 | PH-03 (MOD-03) | AC-03-4 (siklus revisi ke-4 ditolak + tawaran CR, BR-04) | `database/migrations/2026_11_20_120000_create_design_revisions_table.php`, `app/Models/DesignRevision.php`, `app/Models/DesignJob.php`, `app/Services/Design/DesignService.php`, `app/Http/Requests/Design/ReviseDesignRequest.php`, `app/Http/Controllers/Design/DesignController.php`, `app/Policies/DesignPolicy.php`, `routes/web.php`, `database/seeders/RolePermissionSeeder.php`, `resources/views/design/upload.blade.php`, `tests/Feature/Design/DesignRevisionCycleTest.php`, `PROGRESS.md` | Permission `designs.revise` (Admin+Owner). POST `/design/{item}/revise` → `DesignService::requestRevision()`; cycle ke-4 ditolak + flag `change_request_offered`. Upload guard izinkan status Designing/Revision. UI: daftar revisi, tombol Minta Revisi, alert + tombol CR dinonaktifkan bila habis. Test 6 lulus. `php artisan test` hijau (240/240, 1066 assertion), `pint --dirty` bersih. |
 | 2026-11-20 | PH-03 (MOD-03) | AC-03-5 (ACC mengunci versi final, BR-05, BR-17) | `database/migrations/2026_11_20_130000_create_design_approvals_table.php`, `app/Models/DesignApproval.php`, `app/Models/DesignJob.php`, `app/Models/DesignFile.php`, `app/Services/Design/DesignService.php`, `app/Http/Requests/Design/SubmitDesignRequest.php`, `app/Http/Requests/Design/ApproveDesignRequest.php`, `app/Http/Controllers/Design/DesignController.php`, `app/Policies/DesignPolicy.php`, `routes/web.php`, `database/seeders/RolePermissionSeeder.php`, `resources/views/design/upload.blade.php`, `tests/Feature/Design/DesignApprovalTest.php`, `PROGRESS.md` | Permission `designs.approve` (Admin+Owner). POST `/design/{item}/submit` → `submitForApproval()` (item → awaiting_acc + audit `design.submitted`); POST `/design/{item}/approve` → `approve()` (file → final, DesignApproval, item → acc, audit `design.approved`). Upload/revisi ke item acc tetap ditolak. UI: tombol Ajukan ACC/ACC, badge Final, daftar approval. Test 7 lulus. `php artisan test` hijau (247/247, 1115 assertion), `pint --dirty` bersih. |
