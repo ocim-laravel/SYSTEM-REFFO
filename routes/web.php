@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\PasswordChangeController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Customer\CustomerController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Design\DesignController;
 use App\Http\Controllers\Operator\DashboardController as OperatorDashboardController;
 use App\Http\Controllers\Order\OrderController;
 use App\Http\Controllers\System\DivisionController;
@@ -47,6 +48,21 @@ Route::middleware('auth')->group(function () {
     Route::get('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
     Route::post('/orders/{order}/cancel', [OrderController::class, 'cancelStore'])->name('orders.cancel.store');
     Route::get('/orders/{order}/pdf', [OrderController::class, 'exportPdf'])->name('orders.pdf');
+
+    Route::get('/design/queue', [DesignController::class, 'index'])->name('design.queue');
+    Route::post('/design/{item}/claim', [DesignController::class, 'claim'])->name('design.claim');
+
+    Route::get('/design/{item}/upload', [DesignController::class, 'uploadForm'])->name('design.upload');
+    Route::post('/design/{item}/upload', [DesignController::class, 'upload'])->name('design.upload');
+    Route::post('/design/{item}/revise', [DesignController::class, 'revise'])->name('design.revise');
+    Route::post('/design/{item}/submit', [DesignController::class, 'submit'])->name('design.submit');
+    Route::post('/design/{item}/approve', [DesignController::class, 'approve'])->name('design.approve');
+    Route::post('/design/{item}/handoff-to-production', [DesignController::class, 'handoff'])->name('design.handoff');
+    Route::post('/design/{item}/change-request', [DesignController::class, 'changeRequest'])->name('design.change_request');
+    Route::post('/design/change-request/{changeRequest}/approve', [DesignController::class, 'approveChangeRequest'])->name('design.change_request.approve');
+    Route::post('/design/change-request/{changeRequest}/reject', [DesignController::class, 'rejectChangeRequest'])->name('design.change_request.reject');
+
+    Route::get('/design/file/{file}/download', [DesignController::class, 'download'])->name('design.file.download');
 
     Route::get('/password/change', [PasswordChangeController::class, 'edit'])->name('password.change');
     Route::put('/password/change', [PasswordChangeController::class, 'update'])->name('password.change.update');

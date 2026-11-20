@@ -2,14 +2,19 @@
 
 namespace App\Providers;
 
+use App\Models\ChangeRequest;
 use App\Models\Customer;
+use App\Models\DesignFile;
+use App\Models\DesignJob;
 use App\Models\Division;
 use App\Models\Notification;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\WorkCalendar;
 use App\Policies\CustomerPolicy;
+use App\Policies\DesignPolicy;
 use App\Policies\DivisionPolicy;
 use App\Policies\NotificationPolicy;
 use App\Policies\OrderPolicy;
@@ -37,6 +42,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Customer::class, CustomerPolicy::class);
         Gate::policy(Division::class, DivisionPolicy::class);
         Gate::policy(Order::class, OrderPolicy::class);
+        Gate::policy(OrderItem::class, DesignPolicy::class);
+        Gate::policy(DesignJob::class, DesignPolicy::class);
+        Gate::policy(DesignFile::class, DesignPolicy::class);
+        Gate::policy(ChangeRequest::class, DesignPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(WorkCalendar::class, WorkCalendarPolicy::class);
         Gate::policy(Setting::class, SettingPolicy::class);

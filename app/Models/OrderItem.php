@@ -67,4 +67,20 @@ class OrderItem extends Model
     {
         return $this->hasMany(ItemStatusHistory::class);
     }
+
+    /**
+     * @return HasMany<DesignJob, $this>
+     */
+    public function designJobs(): HasMany
+    {
+        return $this->hasMany(DesignJob::class);
+    }
+
+    /**
+     * @return HasMany<ChangeRequest, $this>
+     */
+    public function changeRequests(): HasMany
+    {
+        return $this->hasMany(ChangeRequest::class);
+    }
 }

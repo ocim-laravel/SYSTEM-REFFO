@@ -3,11 +3,13 @@
 namespace App\Services\Order;
 
 use App\Enums\ActionType;
+use App\Enums\ChangeRequestStatus;
 use App\Enums\ItemCategory;
 use App\Enums\ItemStatus;
 use App\Enums\OrderStatus;
 use App\Enums\Priority;
 use App\Enums\UserRole;
+use App\Models\ChangeRequest;
 use App\Models\Customer;
 use App\Models\ItemStatusHistory;
 use App\Models\Order;
@@ -429,6 +431,77 @@ class OrderService
             );
 
             return $order;
+        });
+    }
+
+    /**
+     * Buka kembali item ACC setelah Change Request disetujui (AC-03-6, BR-05, BR-17).
+     *
+     * Guard ACC (assertItemMutable) TETAP private dan tidak dipanggil di jalur ini.
+     * Verifikasi eksplisit dilakukan di sini.
+     *
+     * @param  array{ip?: string|null, user_agent?: string|null}  $meta
+     */
+    public function reopenItemForApprovedChangeRequest(
+        OrderItem $item,
+        ChangeRequest $cr,
+        User $actor,
+        ?string $note = null,
+        array $meta = [],
+    ): OrderItem {
+        if ($cr->status !== ChangeRequestStatus::Approved) {
+            throw ValidationException::withMessages([
+                'change_request' => 'Change Request belum disetujui.',
+            ]);
+        }
+
+        if ((int) $cr->order_item_id !== (int) $item->id) {
+            throw ValidationException::withMessages([
+                'change_request' => 'Change Request tidak sesuai dengan item.',
+            ]);
+        }
+
+        if ($cr->approved_by === null) {
+            throw ValidationException::withMessages([
+                'change_request' => 'Change Request belum memiliki penyetuju.',
+            ]);
+        }
+
+        if ($item->status !== ItemStatus::Acc) {
+            throw ValidationException::withMessages([
+                'item' => 'Item tidak dalam status ACC.',
+            ]);
+        }
+
+        $before = $this->itemSnapshot($item);
+
+        return DB::transaction(function () use ($item, $cr, $actor, $note, $meta, $before): OrderItem {
+            $item->update(['status' => ItemStatus::Revision]);
+
+            ItemStatusHistory::create([
+                'order_item_id' => $item->id,
+                'from_status' => ItemStatus::Acc,
+                'to_status' => ItemStatus::Revision,
+                'changed_by' => $actor->id,
+                'note' => $note ?? 'Change Request disetujui.',
+            ]);
+
+            $item->refresh();
+
+            $this->audit->record(
+                action: 'order.change_request.applied',
+                actor: $actor,
+                modelType: OrderItem::class,
+                modelId: $item->id,
+                before: $before,
+                after: $this->itemSnapshot($item),
+                ip: $meta['ip'] ?? null,
+                userAgent: $meta['user_agent'] ?? null,
+            );
+
+            $cr->update(['applied_at' => now()]);
+
+            return $item;
         });
     }
 

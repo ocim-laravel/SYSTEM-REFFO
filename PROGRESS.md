@@ -8,19 +8,20 @@
 ## FASE AKTIF
 
 **PH-03 â€” DESIGNER (MOD-03)**
-Status: **AKTIF** *(PH-02 ditutup; commit 1b98e76; gate PH-02 disetujui Owner 19 November 2026)*
-Sesi ini: **AC-03-5 - ACC mengunci versi final (BR-05, BR-17)**.
+Status: **SELESAI** *(AC-03-1â€¦AC-03-8 lulus; DoD terpenuhi. Fase berikutnya PH-04 belum dibuka, menunggu persetujuan Owner.)*
+Commit yang disarankan dan telah dibuat: `feat(MOD-03): antrean, upload, revisi, ACC, CR, dan handoff [AC-03-1..AC-03-8]` (belum di-push).
 
 ### Ruang lingkup PH-03 (HANYA ini)
-- [ ] **AC-03-1** Antrean desain hanya memuat item `queued_design`, urut prioritas → deadline.
+- [x] **AC-03-1** Antrean desain hanya memuat item `queued_design`, urut prioritas → deadline. *(filter + orderByRaw prioritas, lalu deadline)*
 - [x] **AC-03-2** Designer bisa mengambil tugas; nama & waktu tercatat.
-- [x] **AC-03-3** Upload v2 tidak menghapus v1; keduanya bisa diunduh. *(sesi ini)*
+- [x] **AC-03-3** Upload v2 tidak menghapus v1; keduanya bisa diunduh.
 - [x] **AC-03-4** Siklus revisi ke-4 ditolak + tawaran Change Request (BR-04).
-- [x] **AC-03-5** ACC mengunci versi final (BR-05, BR-17) *(sesi ini)*
-- [ ] AC-03-6 … AC-03-8 (menyusul)
-Estimasi: Minggu 9â€“13
-Modul: MOD-02 (Admin & Order)
-Sesi ini: **AC-02-7 â€” guard item ACC (BR-05)** + **data demo gate PH-02** (1 pelanggan + 1 order 4 item, kode `ORD-2026-0001`). AC-02-8 (PDF) selesai di sesi sebelumnya.
+- [x] **AC-03-5** ACC mengunci versi final (BR-05, BR-17).
+- [x] **AC-03-6** Change Request menyimpan dampak biaya & deadline; setelah disetujui item dapat direvisi dan **di-ACC ulang** (BR-05, BR-17). *(termasuk perbaikan guard ACC ulang: satu CR untuk satu ACC ulang)*
+- [x] **AC-03-7** Setelah ACC, item dapat diserahkan ke produksi (`queued_production`) oleh Admin.
+- [x] **AC-03-8** Riwayat menampilkan urutan versi, revisi, dan ACC beserta pelakunya.
+Modul: MOD-03 (Designer)
+Gate: 1 item melewati 3 siklus revisi + 1 CR tanpa kehilangan riwayat — **terbukti** oleh test end-to-end ACC → CR → ACC ulang → handoff.
 
 ### Ruang lingkup PH-02 (HANYA ini)
 - [x] **AC-02-1** Order dengan 3 item menghitung total benar, termasuk diskon *(`OrderService::create()`: subtotal `Î£ qty Ã— unit_price`, dikurangi diskon, ditambah `delivery_fee` sekali per order BR-14; `tax` tidak masuk rumus; feature test)*
@@ -34,10 +35,11 @@ Sesi ini: **AC-02-7 â€” guard item ACC (BR-05)** + **data demo gate PH-02**
 - [x] **AC-02-9** Order campuran pcs/m²: satu order boleh mencampur item Produk/Produk Jadi (pcs) dan Printing (m²); ringkasan sebelum proses menampilkan pelanggan, layanan, item, subtotal otomatis, diskon editable, biaya kirim editable, total akhir (ADR-008) *(backend `StoreOrderRequest`/`OrderService::create()`; form create + ringkasan; feature test)*
 - [x] **AC-02-10** Nota menampilkan quantity asli serta luas tagihan item m²: Kolom Qty = angka saja, Kolom Satuan = m²/pcs (ADR-008) *(show.blade.php & pdf.blade.php; feature test)*
 
-### JANGAN DISENTUH di PH-02
-- MOD-03 (desain), MOD-04 (produksi), MOD-05 (finishing)
-- MOD-06 (delivery), MOD-07 (finance), MOD-08/09 (HRD/material), MOD-11 (laporan)
+### JANGAN DISENTUH di PH-03
+- MOD-04 (produksi), MOD-05 (finishing), MOD-06 (delivery), MOD-07 (finance)
+- MOD-08/09 (HRD/material), MOD-11 (laporan)
 - Dashboard, laporan, dan fitur realtime per divisi
+- `opencode.json` (perubahan milik user; sengaja tidak dimasukkan commit)
 
 ### Kriteria selesai PH-02 (gate)
 - [x] AC-02-1 â€¦ AC-02-8 lulus (lihat `docs/plan/modules/MOD-02-order.md`) â€” AC-02-1 s.d. AC-02-8 lulus (AC-02-7 = guard ACC tanpa bypass; bypass Change Request menyusul di MOD-03)
@@ -132,7 +134,7 @@ Sesi ini: **AC-02-7 â€” guard item ACC (BR-05)** + **data demo gate PH-02**
 | PH-00 | Fondasi Sistem | MOD-10 | Selesai (gate disetujui Owner 2026-11-19) |
 | PH-01 | Pelanggan (CRM) | MOD-01 | Selesai (gate disetujui Owner 2026-11-19; AC-01-1â€¦AC-01-6) |
 | PH-02 | Admin & Order | MOD-02 | **Gate selesai; penyempurnaan ADR-008 dijadwalkan minggu 13** |
-| PH-03 | Designer | MOD-03 | Menunggu (minggu 14–17) |
+| PH-03 | Designer | MOD-03 | **Selesai** (AC-03-1…AC-03-8; 20 November 2026) |
 | PH-04 | Operator / Printing | MOD-04 | Menunggu (minggu 18–22) |
 | PH-05 | Finishing / QC / Packing | MOD-05 | Menunggu (minggu 23–25) |
 | PH-06 | Reklame / Delivery / Installation | MOD-06 | Menunggu (minggu 26–28) |
@@ -146,6 +148,7 @@ Sesi ini: **AC-02-7 â€” guard item ACC (BR-05)** + **data demo gate PH-02**
 
 | Tanggal | Fase | ID selesai | File diubah | Catatan |
 |---|---|---|---|---|
+| 2026-11-20 | PH-03 (MOD-03) | Penutupan PH-03: AC-03-1..AC-03-8 (BR-03, BR-04, BR-05, BR-17) | `app/Services/Design/DesignService.php`, `tests/Feature/Design/DesignChangeRequestTest.php`, `PROGRESS.md` (+ seluruh file MOD-03 yang belum di-commit: enum, model, migrasi, Form Request, controller, policy, view, test, route, seeder, `OrderItem`/`OrderService`/`AppServiceProvider`) | Audit sebelum penutupan menemukan blocker ACC ulang pasca-CR (file `Final` lama membuat ACC versi baru ditolak). Diperbaiki di `approve()`: satu CR disyaratkan untuk satu ACC ulang, file final lama diturunkan menjadi draft, riwayat `design_approvals` tetap utuh. Test end-to-end ditambahkan: ACC → CR → ACC ulang → handoff, plus penolakan ACC ulang tanpa CR baru. `php artisan test` hijau, `pint --dirty` bersih. `opencode.json` sengaja tidak dimasukkan commit. |
 | 2026-11-20 | PH-03 (MOD-03) | AC-03-4 (siklus revisi ke-4 ditolak + tawaran CR, BR-04) | `database/migrations/2026_11_20_120000_create_design_revisions_table.php`, `app/Models/DesignRevision.php`, `app/Models/DesignJob.php`, `app/Services/Design/DesignService.php`, `app/Http/Requests/Design/ReviseDesignRequest.php`, `app/Http/Controllers/Design/DesignController.php`, `app/Policies/DesignPolicy.php`, `routes/web.php`, `database/seeders/RolePermissionSeeder.php`, `resources/views/design/upload.blade.php`, `tests/Feature/Design/DesignRevisionCycleTest.php`, `PROGRESS.md` | Permission `designs.revise` (Admin+Owner). POST `/design/{item}/revise` → `DesignService::requestRevision()`; cycle ke-4 ditolak + flag `change_request_offered`. Upload guard izinkan status Designing/Revision. UI: daftar revisi, tombol Minta Revisi, alert + tombol CR dinonaktifkan bila habis. Test 6 lulus. `php artisan test` hijau (240/240, 1066 assertion), `pint --dirty` bersih. |
 | 2026-11-20 | PH-03 (MOD-03) | AC-03-5 (ACC mengunci versi final, BR-05, BR-17) | `database/migrations/2026_11_20_130000_create_design_approvals_table.php`, `app/Models/DesignApproval.php`, `app/Models/DesignJob.php`, `app/Models/DesignFile.php`, `app/Services/Design/DesignService.php`, `app/Http/Requests/Design/SubmitDesignRequest.php`, `app/Http/Requests/Design/ApproveDesignRequest.php`, `app/Http/Controllers/Design/DesignController.php`, `app/Policies/DesignPolicy.php`, `routes/web.php`, `database/seeders/RolePermissionSeeder.php`, `resources/views/design/upload.blade.php`, `tests/Feature/Design/DesignApprovalTest.php`, `PROGRESS.md` | Permission `designs.approve` (Admin+Owner). POST `/design/{item}/submit` → `submitForApproval()` (item → awaiting_acc + audit `design.submitted`); POST `/design/{item}/approve` → `approve()` (file → final, DesignApproval, item → acc, audit `design.approved`). Upload/revisi ke item acc tetap ditolak. UI: tombol Ajukan ACC/ACC, badge Final, daftar approval. Test 7 lulus. `php artisan test` hijau (247/247, 1115 assertion), `pint --dirty` bersih. |
 | 2026-11-20 | PH-02 (MOD-02) | Finalisasi ADR-008 (nota) + commit ADR-008 | `resources/views/orders/show.blade.php`, `resources/views/orders/pdf.blade.php`, `PROGRESS.md` (+ backend/form/ringkasan/test sebelumnya) | Finalisasi format nota: Kolom Qty = angka saja; Kolom Satuan = m²/pcs; Spesifikasi m² tetap `Ukuran: … m × … m, Jumlah: … lembar`; Spesifikasi pcs `Paket Produk Jadi`. AC-02-9 & AC-02-10 ditandai selesai. `php artisan test` hijau (217/217, 956 assertion), `pint` bersih. Commit `feat(MOD-02): order campuran pcs/m2 dan ringkasan proses [AC-02-9][AC-02-10]`. |
