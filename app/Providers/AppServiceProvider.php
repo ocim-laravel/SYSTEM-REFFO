@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\ChangeRequest;
 use App\Models\Customer;
+use App\Models\Delivery;
+use App\Models\DeliveryProof;
 use App\Models\DesignFile;
 use App\Models\DesignJob;
 use App\Models\Division;
@@ -19,6 +21,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Models\WorkCalendar;
 use App\Policies\CustomerPolicy;
+use App\Policies\DeliveryPolicy;
 use App\Policies\DesignPolicy;
 use App\Policies\DivisionPolicy;
 use App\Policies\FinishingPolicy;
@@ -47,6 +50,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(Customer::class, CustomerPolicy::class);
+        Gate::policy(Delivery::class, DeliveryPolicy::class);
+        Gate::policy(DeliveryProof::class, DeliveryPolicy::class);
         Gate::policy(Division::class, DivisionPolicy::class);
         Gate::policy(Order::class, OrderPolicy::class);
         Gate::policy(OrderItem::class, DesignPolicy::class);

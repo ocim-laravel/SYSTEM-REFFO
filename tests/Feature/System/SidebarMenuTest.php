@@ -59,8 +59,8 @@ class SidebarMenuTest extends TestCase
     {
         $this->assertMenuFor(
             UserRole::Admin,
-            ['dashboard', 'customer', 'order', 'production'],
-            ['design', 'finance', 'hrd', 'delivery', 'reports', 'divisions'],
+            ['dashboard', 'customer', 'order', 'production', 'delivery'],
+            ['design', 'finance', 'hrd', 'reports', 'divisions'],
         );
     }
 
@@ -79,8 +79,8 @@ class SidebarMenuTest extends TestCase
     {
         $this->assertMenuFor(
             UserRole::Production,
-            ['dashboard', 'customer', 'production', 'finishing', 'material'],
-            ['order', 'design', 'delivery', 'finance', 'hrd', 'reports', 'divisions'],
+            ['dashboard', 'customer', 'production', 'finishing', 'material', 'delivery'],
+            ['order', 'design', 'finance', 'hrd', 'reports', 'divisions'],
         );
     }
 

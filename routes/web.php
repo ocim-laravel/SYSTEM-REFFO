@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\PasswordChangeController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Customer\CustomerController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Delivery\DeliveryController;
 use App\Http\Controllers\Design\DesignController;
 use App\Http\Controllers\Finishing\FinishingJobController;
 use App\Http\Controllers\Finishing\FinishingQueueController;
@@ -91,6 +92,17 @@ Route::middleware('auth')->group(function () {
     Route::post('/finishing/{item}/rework/{rework}/complete', [FinishingJobController::class, 'completeRework'])->name('finishing.rework.complete');
     Route::post('/finishing/{item}/packing/start', [FinishingJobController::class, 'startPacking'])->name('finishing.packing.start');
     Route::post('/finishing/{item}/packing/{packing}/complete', [FinishingJobController::class, 'completePacking'])->name('finishing.packing.complete');
+
+    Route::get('/deliveries', [DeliveryController::class, 'index'])->name('deliveries.index');
+    Route::get('/deliveries/create', [DeliveryController::class, 'create'])->name('deliveries.create');
+    Route::post('/deliveries', [DeliveryController::class, 'store'])->name('deliveries.store');
+    Route::get('/deliveries/proofs/{proof}/download', [DeliveryController::class, 'downloadProof'])->name('deliveries.proof.download');
+    Route::get('/deliveries/{delivery}', [DeliveryController::class, 'show'])->name('deliveries.show');
+    Route::post('/deliveries/{delivery}/crew', [DeliveryController::class, 'assignCrew'])->name('deliveries.crew');
+    Route::post('/deliveries/{delivery}/progress', [DeliveryController::class, 'progress'])->name('deliveries.progress');
+    Route::post('/deliveries/{delivery}/proof', [DeliveryController::class, 'proof'])->name('deliveries.proof');
+    Route::post('/deliveries/{delivery}/complete', [DeliveryController::class, 'complete'])->name('deliveries.complete');
+    Route::get('/deliveries/{delivery}/print', [DeliveryController::class, 'print'])->name('deliveries.print');
 
     Route::get('/password/change', [PasswordChangeController::class, 'edit'])->name('password.change');
     Route::put('/password/change', [PasswordChangeController::class, 'update'])->name('password.change.update');
